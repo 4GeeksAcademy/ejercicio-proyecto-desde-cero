@@ -40,6 +40,43 @@ COURSES = [
 ]
 
 
+# Foto y texto alternativo por curso (clave: nombre en español).
+IMAGES: dict[str, tuple[str, str]] = {
+    "Cerámica para principiantes": (
+        "https://tonypotter.es/wp-content/uploads/2023/10/taller-ceramica-fin-de-semana-granada.webp",
+        "Alumnos modelando arcilla en torno de mesa en un taller de cerámica",
+    ),
+    "Fotografía de retrato con luz natural": (
+        "https://ieperiodismo.com/wp-content/uploads/tipos-de-fotografias.jpg",
+        "Persona apuntando con una cámara réflex y su objetivo",
+    ),
+    "Pan de masa madre": (
+        "https://www.cocinadelirante.com/sites/default/files/images/2025/02/que-es-pan-masa-madre.jpg",
+        "Frasco con masa madre burbujeante junto a una hogaza de pan de corteza dorada",
+    ),
+    "Tu primera prenda a máquina": (
+        "https://images.squarespace-cdn.com/content/v1/5c7a92f77046806b6fceb168/e3a0a7ce-a519-458a-a19a-dde865b99a07/clasedecosturabarcelonadudua.jpg?format=1000w",
+        "Profesora ayudando a una alumna con una máquina de coser",
+    ),
+    "Mantenimiento básico de tu moto": (
+        "https://imesanmartin.com/wp-content/uploads/2024/10/IME_carrera_mecanica_motos_1.jpg",
+        "Mecánico reparando el motor de una moto en un taller",
+    ),
+    "Acuarela para principiantes": (
+        "https://daler-rowney.com/wp-content/uploads/2025/06/imgi_19_134500112_simply_watercolour_activityset_eye_8.jpg",
+        "Ilustración de un ojo en acuarela de colores junto a pinceles y paleta de pintura",
+    ),
+    "Macramé decorativo": (
+        "https://clubdelmacrame.com/wp-content/uploads/2019/06/IMG_20190606_140826205-scaled.jpg",
+        "Tres mujeres tejiendo lámparas de macramé sobre frascos de vidrio en un taller",
+    ),
+    "Cocina colombiana de autor": (
+        "https://www.igi-la.com/blog/brigada-cocina-puestos-funciones/brigada-cocina-1200.webp",
+        "Cocineros con uniforme negro emplatando en una cocina profesional",
+    ),
+}
+
+
 async def seed() -> None:
     async with get_sessionmaker()() as s:
         if (await s.execute(select(func.count()).select_from(Category))).scalar_one():
@@ -73,6 +110,8 @@ async def seed() -> None:
                     capacity=cap,
                     price_minor=price * 100,
                     currency="COP",
+                    cover_image_url=IMAGES[es][0],
+                    cover_image_alt=IMAGES[es][1],
                     is_recorded=cat in ("cocina",),
                     recording_status="PLANNED" if cat == "cocina" else "NONE",
                 )

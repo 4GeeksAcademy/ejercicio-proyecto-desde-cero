@@ -68,10 +68,10 @@ Ver [`.env.example`](.env.example). Nunca subas `.env`. `JWT_SECRET` y `PAYMENT_
 
 ```bash
 docker compose up -d db
-cd backend  && POSTGRES_HOST=localhost uv run pytest --cov=app   # 149+ tests, ~93 % cobertura (PostgreSQL real)
+cd backend  && POSTGRES_HOST=localhost uv run pytest --cov=app   # 158 tests, ~94 % cobertura (PostgreSQL real)
             && uv run ruff check . && uv run mypy app
 cd frontend && npm run lint && npm run typecheck && npm test      # unit + i18n
-            && npm run e2e                                         # requiere el stack levantado y un admin (ver e2e/)
+            && npm run e2e                                         # 11 pruebas en navegador; requiere el stack levantado y un admin (ver e2e/)
 ```
 E2E: `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` apuntan a un usuario con rol ADMIN; `npx playwright install chromium` la primera vez.
 
@@ -98,7 +98,13 @@ Contraseñas con argon2id · cookies `httpOnly`/`SameSite` + CSRF · bloqueo por
 ## Pendiente del cliente (bloquea producción)
 Proveedor de pagos y moneda · quién recibe el 20 % · política de reembolsos · función exacta del QR y WhatsApp · grabaciones y consentimiento · textos legales (privacidad/términos) y requisitos fiscales en Colombia. Detalle en el análisis (punto 12).
 
+## Producción: lo que NO debe olvidarse
+- `COOKIE_SECURE=true`, `JWT_SECRET` y `PAYMENT_WEBHOOK_SECRET` propios y un proveedor de pagos real: la aplicación **se niega a arrancar** en staging/producción si falta alguno.
+- No publicar el puerto 8000 del backend. Poner delante un proxy inverso real (Nginx, Caddy o balanceador) y entonces `TRUSTED_PROXY_HOPS=1` para que el límite de intentos sea por cliente. **Con el proxy de Next solamente, déjalo en 0**: Next no añade `X-Forwarded-For` y el cliente podría falsificarlo.
+- Dominio público con HTTPS y `NEXT_PUBLIC_SITE_URL` / `FRONTEND_URL` ([docs/seo-y-agentes.md](docs/seo-y-agentes.md)).
+
 ## Troubleshooting
 - *Tests: «PostgreSQL no disponible»* → `docker compose up -d db`.
 - *La web sale sin estilos* → no quites la regla de Turbopack de `frontend/next.config.ts` (carga Tailwind).
-- *Tras reiniciar el entorno los contenedores están `Exited`* → `docker compose up -d`.
+- *Tras reiniciar el entorno los contenedores están `Exited`* → ahora tienen `restart: unless-stopped` y vuelven solos; si no, `docker compose up -d`.
+- *Error `parent snapshot ... does not exist` al construir* (Docker pierde su caché tras un reinicio) → `docker builder prune -af` y repetir. Si un contenedor da `RWLayer ... nil`: `docker compose down` (sin `-v`, conserva los datos) y `docker compose up -d`.

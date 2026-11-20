@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     access_token_minutes: int = 15
     refresh_token_days: int = 14
     cookie_secure: bool = False
+    # Nº de proxies de confianza delante del backend (p. ej. 1 = el frontend de Next). 0 = ninguno: se usa la IP directa.
+    trusted_proxy_hops: int = 0
 
     # Pagos. El proveedor real se decide en P-02; hoy existe un proveedor simulado.
     payment_provider: str = "fake"
@@ -62,6 +64,10 @@ class Settings(BaseSettings):
             if self.jwt_secret.startswith("dev-only") or self.payment_webhook_secret.startswith("dev-only"):
                 raise ValueError(
                     "Secretos por defecto no permitidos fuera de desarrollo: define JWT_SECRET y PAYMENT_WEBHOOK_SECRET"
+                )
+            if not self.cookie_secure:
+                raise ValueError(
+                    "COOKIE_SECURE=true es obligatorio fuera de desarrollo (las cookies de sesión viajarían sin cifrar)"
                 )
             if self.payment_provider == "fake":
                 raise ValueError("El proveedor de pagos 'fake' no se puede usar en staging/producción")

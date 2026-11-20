@@ -18,6 +18,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
 
   migrate:
     build: ./backend
@@ -32,6 +33,10 @@ services:
       POSTGRES_PORT: "5432"
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en .env}
+      # 0 = no fiarse de X-Forwarded-For (seguro). El proxy de Next NO añade esa cabecera, solo reenvía la del cliente,
+      # así que con 1 un atacante podría falsificarla. Usa 1 SOLO detrás de un proxy inverso real (Nginx/Caddy/balanceador)
+      # que establezca la cabecera, y sin publicar el puerto 8000.
+      TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-0}
       PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-dev-only-webhook-secret-change-me}
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
@@ -58,6 +63,7 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
 
   frontend:
     build:
@@ -73,6 +79,7 @@ services:
     depends_on:
       backend: { condition: service_healthy }
     networks: [edge]
+    restart: unless-stopped
 
   worker:
     build: ./backend
@@ -95,12 +102,14 @@ services:
     ports:
       - "127.0.0.1:3001:3000" # Grafana (usuario/clave por defecto de desarrollo: admin/admin)
     networks: [internal]
+    restart: unless-stopped
 
   mailpit:
     image: axllent/mailpit:v1.21
     ports:
       - "127.0.0.1:8025:8025" # bandeja de correos de desarrollo
     networks: [internal]
+    restart: unless-stopped
 
 networks:
   edge: {}
