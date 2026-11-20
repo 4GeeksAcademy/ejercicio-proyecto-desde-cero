@@ -36,11 +36,12 @@ class SlidingWindowLimiter:
         self._hits.clear()
 
 
-def rate_limit(name: str, limit: int, window_seconds: int) -> Callable[[Request], None]:
-    limiter = SlidingWindowLimiter(limit, window_seconds)
+def rate_limit(name: str, limit: int | Callable[[], int], window_seconds: int) -> Callable[[Request], None]:
+    limiter = SlidingWindowLimiter(0, window_seconds)
     _registry.append(limiter)
 
     def dependency(request: Request) -> None:
+        limiter.limit = limit() if callable(limit) else limit  # configurable en caliente (tests)
         ip = request.client.host if request.client else "unknown"
         limiter.check(f"{name}:{ip}")
 

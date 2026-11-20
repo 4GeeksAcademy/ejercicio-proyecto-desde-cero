@@ -3,15 +3,18 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.auth.models import Profile, User
+from app.modules.auth.models import Profile, Role, User
 from app.modules.courses.models import Category, CategoryTranslation, Course, CourseTranslation, Venue
 
 
-async def make_user(s: AsyncSession, email: str | None = None) -> User:
+async def make_user(s: AsyncSession, email: str | None = None, role: str | None = None) -> User:
     u = User(email=email or f"u{uuid.uuid4().hex[:8]}@example.com", password_hash="x")
     u.profile = Profile(full_name="Test User", preferred_locale="es")
+    if role:
+        u.roles = [(await s.execute(select(Role).where(Role.name == role))).scalar_one()]
     s.add(u)
     await s.flush()
     return u

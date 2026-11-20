@@ -4,9 +4,11 @@ from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Identity,
     Index,
     PrimaryKeyConstraint,
     String,
@@ -84,6 +86,7 @@ class BookingStatusHistory(UUIDMixin, Base):
     actor_user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True), nullable=False, unique=True)  # orden estricto
     __table_args__ = (
         check_in("to_status", BookingStatus, "to_status_valid"),
         CheckConstraint("actor_type IN ('USER', 'ADMIN', 'SYSTEM')", name="actor_type_valid"),

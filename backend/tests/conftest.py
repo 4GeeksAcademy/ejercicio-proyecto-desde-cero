@@ -8,6 +8,7 @@ import os
 os.environ["APP_ENV"] = "testing"
 os.environ["POSTGRES_DB"] = "tallerya_test"
 os.environ.setdefault("POSTGRES_HOST", "localhost")
+os.environ["BOOKING_RATE_LIMIT_PER_MINUTE"] = "10000"
 
 import psycopg  # noqa: E402
 import pytest  # noqa: E402

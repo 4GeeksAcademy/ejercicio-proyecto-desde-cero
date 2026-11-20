@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     mail_from: str = "Tallerya <no-reply@tallerya.local>"
     frontend_url: str = "http://localhost:3000"
 
+    booking_rate_limit_per_minute: int = 20
+
     # Reglas de negocio configurables (Hito 5/6)
     booking_payment_window_hours: int = 24
     booking_cutoff_hours: int = 24

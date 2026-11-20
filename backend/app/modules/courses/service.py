@@ -1,13 +1,14 @@
 """Catálogo público y administración de cursos."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import clock
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError
 from app.core.text import slugify
@@ -90,7 +91,7 @@ async def search_courses(
     limit: int,
     offset: int,
 ) -> tuple[list[CourseSummary], int]:
-    now = datetime.now(UTC)
+    now = clock.now()
     taken = taken_subquery(now)
     stmt = (
         select(Course)
@@ -157,7 +158,7 @@ async def get_course_by_slug(session: AsyncSession, slug: str, locale: str) -> C
     )
     if course is None:
         raise NotFoundError("Curso no encontrado.")
-    now = datetime.now(UTC)
+    now = clock.now()
     taken = (await seats_taken(session, [course.id], now))[course.id]
     base = _summary(course, locale, taken)
     t = _tr(course, locale)
@@ -187,7 +188,7 @@ async def get_availability(session: AsyncSession, course_id: uuid.UUID) -> Avail
     course = await session.get(Course, course_id)
     if course is None or course.status not in PUBLIC_STATUSES:
         raise NotFoundError("Curso no encontrado.")
-    now = datetime.now(UTC)
+    now = clock.now()
     taken = (await seats_taken(session, [course_id], now))[course_id]
     left = max(course.capacity - taken, 0)
     return Availability(
@@ -232,7 +233,7 @@ def _translation(course_id: uuid.UUID, locale: str, data: TranslationIn, slug: s
 
 
 async def _admin_view(session: AsyncSession, course: Course) -> AdminCourse:
-    now = datetime.now(UTC)
+    now = clock.now()
     taken = (await seats_taken(session, [course.id], now))[course.id]
     es = next((t for t in course.translations if t.locale == "es"), course.translations[0])
     left = max(course.capacity - taken, 0)
@@ -287,7 +288,7 @@ async def admin_list_courses(
 
 
 async def create_course(session: AsyncSession, data: CourseCreate, actor_id: uuid.UUID) -> AdminCourse:
-    if data.starts_at <= datetime.now(UTC):
+    if data.starts_at <= clock.now():
         raise BusinessRuleError("La fecha de inicio debe ser futura.", code="START_IN_PAST")
     _validate_one_day(data.starts_at, data.ends_at, data.timezone)
     if await session.get(Category, data.category_id) is None or await session.get(Venue, data.venue_id) is None:
@@ -341,7 +342,7 @@ async def update_course(
         raise ConflictError("Un curso cancelado no se puede modificar.", code="COURSE_CANCELLED")
     changes = data.model_dump(exclude_unset=True, exclude={"translations"})
     if "capacity" in changes and changes["capacity"] is not None:
-        taken = (await seats_taken(session, [course.id], datetime.now(UTC)))[course.id]
+        taken = (await seats_taken(session, [course.id], clock.now()))[course.id]
         if changes["capacity"] < taken:  # RN-16
             raise BusinessRuleError(
                 f"No puedes reducir la capacidad por debajo de las plazas ocupadas ({taken}).",
@@ -386,7 +387,7 @@ async def set_course_status(
     if course.status == CourseStatus.CANCELLED.value:
         raise ConflictError("Un curso cancelado no se puede reactivar.", code="COURSE_CANCELLED")
     if new_status == CourseStatus.ACTIVE:
-        if course.ends_at <= datetime.now(UTC):
+        if course.ends_at <= clock.now():
             raise BusinessRuleError("No se puede activar un curso ya finalizado.", code="COURSE_FINISHED")
         if not any(t.locale == "es" for t in course.translations):
             raise BusinessRuleError("Falta la traducción en español.", code="MISSING_TRANSLATION")

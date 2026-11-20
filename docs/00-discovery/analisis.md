@@ -100,7 +100,7 @@ Son **[PROPUESTA]**, no SLA del cliente. Todos "PENDIENTE DE CONFIRMAR" como com
 | RN-10 | Cupos ocupados = reservas en estados que **consumen plaza** (ver punto 18); nunca negativos | [REGLA] |
 | RN-11 | Comisión = `round(precio × bps / 10000)`; neto = precio − comisión; snapshot al momento del pago | [PROPUESTA] sobre C-09 |
 | RN-12 | Dinero en enteros de unidad mínima + moneda ISO 4217; nunca `float` | [TÉCNICO] |
-| RN-13 | Plazo de pago efectivo = `min(creación + 24 h, inicio − 24 h)`? | **[PENDIENTE]** (ver P-03) |
+| RN-13 | Plazo de pago = creación + 24 h. Como solo se reserva con >24 h de antelación, el plazo siempre termina ANTES del inicio. *(Corregido en H5: la versión anterior de este análisis lo planteaba mal.)* | [REGLA] |
 | RN-14 | Un pago que llega tras la caducidad no confirma plaza; se trata como anomalía (reembolso/revisión) | [PROPUESTA] / [PENDIENTE] |
 | RN-15 | Reserva en `PAYMENT_PROCESSING` no caduca hasta que el proveedor resuelva (con tope) | [PROPUESTA] |
 | RN-16 | Reducir capacidad de un curso por debajo de reservas activas está prohibido | [REGLA] |
@@ -119,7 +119,7 @@ Ordenadas por el hito que bloquean. **Los Hitos 1–5 no dependen de ellas.**
 |---|---|---|
 | P-01 | ¿Quién recibe exactamente el 20 %? (¿Tallerya retiene 20 % y paga 80 % al instructor/dueño del taller? ¿el propietario cobra comisión sobre cursos de terceros?) | H6 (contabilidad) |
 | P-02 | Proveedor de pagos (candidatos a verificar disponibilidad: Wompi, Mercado Pago, PayU, ePayco; Stripe no asumir) y moneda definitiva | H6 |
-| P-03 | Si reserva 25 h antes del inicio, el plazo de pago de 24 h terminaría pasado el inicio. ¿Se acorta el plazo? | H5 |
+| P-03 | Matiz real (corrige la versión anterior): quien reserva a T−25 h puede pagar hasta T−1 h, es decir, DENTRO de la ventana en que ya no se puede cancelar y con poco margen para que el propietario apruebe. ¿Se acorta el plazo de pago (p. ej. hasta T−24 h) o se acepta? Hoy: se acepta (24 h fijas, configurable). | H5 (no bloquea) |
 | P-04 | Si el cliente pagó y el propietario rechaza: ¿reembolso total/parcial/crédito? | H6 |
 | P-05 | Política de reembolsos (cliente cancela >24 h, curso cancelado por Tallerya, rechazo) y retracto del consumidor | H6 |
 | P-06 | Procedimiento de aprobación: ¿manual siempre o automático por curso? ¿quién aprueba? ¿plazo máximo antes de reembolso automático? | H5/H6 |
