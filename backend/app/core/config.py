@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     refresh_token_days: int = 14
     cookie_secure: bool = False
 
+    # Email (Mailpit en desarrollo)
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    mail_from: str = "Tallerya <no-reply@tallerya.local>"
+    frontend_url: str = "http://localhost:3000"
+
     # Reglas de negocio configurables (Hito 5/6)
     booking_payment_window_hours: int = 24
     booking_cutoff_hours: int = 24

@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
@@ -11,6 +11,9 @@ from app.core.db import dispose_engine
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
+from app.modules.admin import router as admin_router
+from app.modules.auth import router as auth_router
+from app.modules.users import router as users_router
 
 
 @asynccontextmanager
@@ -44,6 +47,11 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
     register_exception_handlers(app)
     app.include_router(health.router)
+    api_v1 = APIRouter(prefix="/api/v1")
+    api_v1.include_router(auth_router.router)
+    api_v1.include_router(users_router.router)
+    api_v1.include_router(admin_router.router)
+    app.include_router(api_v1)
     return app
 
 
