@@ -1,0 +1,101 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+
+const SLUG_ES = "pan-de-masa-madre";
+const SLUG_EN = "sourdough-bread";
+const ADMIN = { email: process.env.E2E_ADMIN_EMAIL ?? "", password: process.env.E2E_ADMIN_PASSWORD ?? "" };
+const stamp = Date.now();
+const client = { email: `e2e-${stamp}@example.com`, password: `Clave-${stamp}-segura`, name: "Eva E2E", phone: "+573001112233" };
+
+async function login(page: Page, email: string, password: string) {
+  await page.goto("/es/iniciar-sesion");
+  await page.getByLabel("Correo electrónico").fill(email);
+  await page.getByLabel("Contraseña").fill(password);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.waitForURL(/\/es\/mi-cuenta/); // el login terminó (cookies ya establecidas)
+}
+
+test.describe.configure({ mode: "serial" });
+
+test("visitante: catálogo, búsqueda, idioma y detalle con SEO", async ({ page }) => {
+  await page.goto("/es/cursos");
+  await expect(page.getByRole("heading", { level: 1, name: "Cursos y talleres" })).toBeVisible();
+  await page.getByLabel("Buscar").fill("masa madre");
+  await page.getByRole("button", { name: "Aplicar filtros" }).click();
+  await expect(page).toHaveURL(/q=masa/);
+  await page.getByRole("link", { name: "Pan de masa madre" }).first().click();
+  await expect(page).toHaveURL(new RegExp(`/es/cursos/${SLUG_ES}`));
+  await expect(page.getByRole("button", { name: "Reservar mi plaza" })).toHaveCount(0); // visitante: debe iniciar sesión
+  await expect(page.getByRole("link", { name: "Inicia sesión para reservar" })).toBeVisible();
+  // El selector de idioma lleva al SLUG correcto del otro idioma (no al mismo slug).
+  await page.getByRole("link", { name: "en", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/en/courses/${SLUG_EN}`));
+  await expect(page.getByRole("heading", { level: 1, name: "Sourdough Bread" })).toBeVisible();
+  const ld = await page.locator('script[type="application/ld+json"]').first().textContent();
+  expect(JSON.parse(ld ?? "{}")["@type"]).toBe("Event");
+});
+
+test("accesibilidad: sin violaciones graves en páginas públicas", async ({ page }) => {
+  for (const path of ["/es", "/es/cursos", `/es/cursos/${SLUG_ES}`, "/es/iniciar-sesion", "/es/registro", "/en/faq"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    const serious = results.violations.filter((v) => ["serious", "critical"].includes(v.impact ?? ""));
+    expect(serious.map((v) => `${path}: ${v.id} (${v.nodes.length})`)).toEqual([]);
+  }
+});
+
+test("registro valida y NO preselecciona marketing", async ({ page }) => {
+  await page.goto("/es/registro");
+  await expect(page.getByLabel(/promociones, descuentos y ofertas/)).not.toBeChecked();
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page.getByRole("alert").first()).toBeVisible();
+});
+
+test("cliente: reservar, pagar (simulado) y ver el estado", async ({ page }) => {
+  await page.goto(`/es/cursos/${SLUG_ES}`);
+  await page.getByRole("link", { name: "Inicia sesión para reservar" }).click();
+  await page.getByRole("link", { name: "Crear cuenta" }).last().click();
+  await page.getByLabel("Nombre completo").fill(client.name);
+  await page.getByLabel("Correo electrónico").fill(client.email);
+  await page.getByLabel("Teléfono").fill(client.phone);
+  await page.getByLabel("Contraseña").fill(client.password);
+  await page.getByLabel(/Acepto los términos/).check();
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  // Tras registrarse vuelve al curso que quería reservar.
+  await expect(page).toHaveURL(new RegExp(`/es/cursos/${SLUG_ES}`));
+  await page.getByRole("button", { name: "Reservar mi plaza" }).click();
+  await expect(page).toHaveURL(/\/es\/mi-cuenta\/reservas\//);
+  await expect(page.getByText("Pendiente de pago").first()).toBeVisible();
+  await expect(page.getByText(/Tiempo para pagar/)).toBeVisible();
+  await page.getByRole("button", { name: "Pagar ahora" }).click();
+  await expect(page.getByRole("heading", { name: "Pasarela de pago de pruebas" })).toBeVisible();
+  await page.getByRole("button", { name: "Simular pago exitoso" }).click();
+  await expect(page).toHaveURL(/\/es\/mi-cuenta$/);
+  await expect(page.getByText("Pendiente de aprobación").first()).toBeVisible();
+});
+
+test("seguridad: un cliente no entra en administración", async ({ page }) => {
+  await login(page, client.email, client.password);
+  await page.goto("/es/admin");
+  await expect(page.getByText("No tienes acceso a esta sección.")).toBeVisible();
+});
+
+test("admin aprueba y el cliente ve su plaza confirmada con QR", async ({ page, browser }) => {
+  test.skip(!ADMIN.email, "Define E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD");
+  await login(page, ADMIN.email, ADMIN.password);
+  await page.goto("/es/admin/bookings");
+  const row = page.getByRole("row", { name: new RegExp(client.email) });
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { name: "Aprobar" }).click();
+  await expect(page.getByRole("row", { name: new RegExp(client.email) })).toHaveCount(0); // sale de "pendientes"
+
+  const ctx = await browser.newContext();
+  const clientPage = await ctx.newPage();
+  await login(clientPage, client.email, client.password);
+  await clientPage.goto("/es/mi-cuenta");
+  await clientPage.getByRole("link", { name: "Pan de masa madre" }).first().click();
+  await expect(clientPage.getByText("Confirmada").first()).toBeVisible();
+  await expect(clientPage.getByRole("img", { name: "Tu código QR" })).toBeVisible();
+  await ctx.close();
+});
