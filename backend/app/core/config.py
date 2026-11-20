@@ -8,7 +8,7 @@ PARA QUÉ: no tener secretos en el código y poder cambiar de entorno
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     refresh_token_days: int = 14
     cookie_secure: bool = False
 
+    # Pagos. El proveedor real se decide en P-02; hoy existe un proveedor simulado.
+    payment_provider: str = "fake"
+    payment_webhook_secret: str = "dev-only-webhook-secret-change-me"
+    webhook_tolerance_seconds: int = 300
+
     # Email (Mailpit en desarrollo)
     smtp_host: str = "localhost"
     smtp_port: int = 1025
@@ -45,6 +50,17 @@ class Settings(BaseSettings):
     booking_payment_window_hours: int = 24
     booking_cutoff_hours: int = 24
     default_commission_bps: int = 2000  # 20 % [CLIENTE], configurable
+
+    @model_validator(mode="after")
+    def _no_default_secrets_in_production(self) -> "Settings":
+        if self.app_env in ("production", "staging"):
+            if self.jwt_secret.startswith("dev-only") or self.payment_webhook_secret.startswith("dev-only"):
+                raise ValueError(
+                    "Secretos por defecto no permitidos fuera de desarrollo: define JWT_SECRET y PAYMENT_WEBHOOK_SECRET"
+                )
+            if self.payment_provider == "fake":
+                raise ValueError("El proveedor de pagos 'fake' no se puede usar en staging/producción")
+        return self
 
     @computed_field  # type: ignore[prop-decorator]
     @property

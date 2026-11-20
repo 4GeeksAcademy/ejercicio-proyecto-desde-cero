@@ -237,7 +237,7 @@ async def create_booking(
         await session.rollback()
         raise AlreadyBookedError() from exc
 
-    out = to_out(booking, await _course_for_view(session, course.id), locale)
+    out = to_out(booking, await course_for_view(session, course.id), locale)
     if idempotency_key:
         session.add(
             IdempotencyKey(
@@ -253,7 +253,7 @@ async def create_booking(
     return out, True
 
 
-async def _course_for_view(session: AsyncSession, course_id: uuid.UUID) -> Course:
+async def course_for_view(session: AsyncSession, course_id: uuid.UUID) -> Course:
     return (
         (await session.execute(select(Course).where(Course.id == course_id).execution_options(populate_existing=True)))
         .scalars()
@@ -273,7 +273,7 @@ async def list_my_bookings(
         stmt = stmt.where(Booking.status == status)
     total = (await session.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
     rows = (await session.execute(stmt.order_by(Booking.created_at.desc()).limit(limit).offset(offset))).scalars().all()
-    out = [to_out(b, await _course_for_view(session, b.course_id), locale) for b in rows]
+    out = [to_out(b, await course_for_view(session, b.course_id), locale) for b in rows]
     return out, total
 
 
@@ -292,10 +292,10 @@ async def get_my_booking(session: AsyncSession, user_id: uuid.UUID, booking_id: 
         .scalars()
         .all()
     )
-    return to_out(booking, await _course_for_view(session, booking.course_id), locale, list(history))
+    return to_out(booking, await course_for_view(session, booking.course_id), locale, list(history))
 
 
-async def _lock_booking(session: AsyncSession, booking_id: uuid.UUID) -> Booking:
+async def lock_booking(session: AsyncSession, booking_id: uuid.UUID) -> Booking:
     b = (await session.execute(select(Booking).where(Booking.id == booking_id).with_for_update())).scalar_one_or_none()
     if b is None:
         raise NotFoundError("Reserva no encontrada.", code="BOOKING_NOT_FOUND")
@@ -308,10 +308,10 @@ async def _lock_booking(session: AsyncSession, booking_id: uuid.UUID) -> Booking
 async def cancel_my_booking(
     session: AsyncSession, principal: Principal, booking_id: uuid.UUID, reason: str | None, locale: str = "es"
 ) -> BookingOut:
-    booking = await _lock_booking(session, booking_id)
+    booking = await lock_booking(session, booking_id)
     if booking.user_id != principal.user.id:
         raise NotFoundError("Reserva no encontrada.", code="BOOKING_NOT_FOUND")
-    course = await _course_for_view(session, booking.course_id)
+    course = await course_for_view(session, booking.course_id)
     if course.starts_at - clock.now() <= timedelta(hours=get_settings().booking_cutoff_hours):
         raise BusinessRuleError(
             "Ya no puedes cancelar: faltan menos de 24 horas para el inicio.", code="CANCELLATION_WINDOW_CLOSED"
@@ -325,8 +325,8 @@ async def admin_decide(
     session: AsyncSession, principal: Principal, booking_id: uuid.UUID, decision: Event, reason: str | None
 ) -> AdminBookingOut:
     """Aprobar / rechazar / cancelar (admin). Siempre queda en auditoría."""
-    booking = await _lock_booking(session, booking_id)
-    course = await _course_for_view(session, booking.course_id)
+    booking = await lock_booking(session, booking_id)
+    course = await course_for_view(session, booking.course_id)
     if decision == Event.APPROVED and course.status == CourseStatus.CANCELLED.value:
         raise BusinessRuleError("El curso está cancelado.", code="COURSE_CANCELLED")
     await apply_transition(session, booking, decision, Actor.ADMIN, principal.user.id, reason)
@@ -347,7 +347,7 @@ async def admin_view(session: AsyncSession, booking: Booking, locale: str) -> Ad
 
     user = await session.get(User, booking.user_id)
     assert user is not None  # noqa: S101 (FK garantiza existencia)
-    base = to_out(booking, await _course_for_view(session, booking.course_id), locale)
+    base = to_out(booking, await course_for_view(session, booking.course_id), locale)
     return AdminBookingOut(
         **base.model_dump(), user_id=user.id, user_name=user.profile.full_name, user_email=user.email
     )
@@ -432,21 +432,21 @@ async def cancel_course(session: AsyncSession, course_id: uuid.UUID, principal: 
 
 
 async def on_payment_initiated(session: AsyncSession, booking_id: uuid.UUID) -> None:
-    b = await _lock_booking(session, booking_id)
+    b = await lock_booking(session, booking_id)
     await apply_transition(session, b, Event.PAYMENT_INITIATED, Actor.SYSTEM)
 
 
 async def on_payment_failed(session: AsyncSession, booking_id: uuid.UUID) -> None:
-    b = await _lock_booking(session, booking_id)
+    b = await lock_booking(session, booking_id)
     await apply_transition(session, b, Event.PAYMENT_FAILED, Actor.SYSTEM)
 
 
 async def on_payment_confirmed(session: AsyncSession, booking_id: uuid.UUID) -> BookingStatus:
     """PAID y, en la misma transacción, PENDING_APPROVAL (o CONFIRMED si el curso se auto-aprueba)."""
-    b = await _lock_booking(session, booking_id)
+    b = await lock_booking(session, booking_id)
     await apply_transition(session, b, Event.PAYMENT_CONFIRMED, Actor.SYSTEM)
     await apply_transition(session, b, Event.AWAIT_APPROVAL, Actor.SYSTEM)
-    course = await _course_for_view(session, b.course_id)
+    course = await course_for_view(session, b.course_id)
     if not course.requires_approval:
         await apply_transition(session, b, Event.APPROVED, Actor.SYSTEM, reason="auto_approval")
     return S(b.status)
