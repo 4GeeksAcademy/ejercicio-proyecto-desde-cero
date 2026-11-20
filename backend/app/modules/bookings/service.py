@@ -450,3 +450,42 @@ async def on_payment_confirmed(session: AsyncSession, booking_id: uuid.UUID) -> 
     if not course.requires_approval:
         await apply_transition(session, b, Event.APPROVED, Actor.SYSTEM, reason="auto_approval")
     return S(b.status)
+
+
+# ------------------------------------------------------------------ QR y check-in [PENDIENTE P-08]
+
+
+async def qr_for_booking(session: AsyncSession, user_id: uuid.UUID, booking_id: uuid.UUID) -> str:
+    from app.modules.bookings import qr
+
+    booking = await session.get(Booking, booking_id)
+    if booking is None or booking.user_id != user_id:
+        raise NotFoundError("Reserva no encontrada.", code="BOOKING_NOT_FOUND")
+    if booking.status != S.CONFIRMED.value:
+        raise ConflictError("El QR solo está disponible con la plaza confirmada.", code="QR_NOT_AVAILABLE")
+    return qr.make_token(booking.id)
+
+
+async def check_in(session: AsyncSession, principal: Principal, token: str) -> tuple[AdminBookingOut, bool]:
+    """Marca la asistencia al escanear el QR. Idempotente: devuelve (reserva, primera_vez)."""
+    from app.modules.bookings import qr
+
+    booking = await lock_booking(session, qr.parse_token(token))
+    course = await course_for_view(session, booking.course_id)
+    if booking.status != S.CONFIRMED.value or course.status == CourseStatus.CANCELLED.value:
+        raise ConflictError("La reserva no está confirmada.", code="CHECKIN_NOT_ALLOWED")
+    now = clock.now()
+    if not (course.starts_at - timedelta(hours=6) <= now <= course.ends_at + timedelta(hours=6)):
+        raise BusinessRuleError("Fuera de la ventana de acceso del curso.", code="CHECKIN_OUT_OF_WINDOW")
+    first = booking.checked_in_at is None
+    if first:
+        booking.checked_in_at = now
+        await audit.record(
+            session,
+            actor_id=principal.user.id,
+            action="booking.checked_in",
+            resource_type="booking",
+            resource_id=booking.id,
+        )
+        await session.commit()
+    return await admin_view(session, booking, "es"), first

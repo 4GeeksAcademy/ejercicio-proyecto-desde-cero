@@ -54,6 +54,7 @@ class Booking(UUIDMixin, TimestampMixin, Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     price_minor: Mapped[int] = mapped_column(nullable=False)  # snapshot del precio al reservar
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # asistencia (QR) [PENDIENTE P-08]
 
     __table_args__ = (
         check_in("status", BookingStatus, "status_valid"),

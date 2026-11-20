@@ -2,6 +2,7 @@ import uuid
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Query, Response
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -74,3 +75,18 @@ async def cancel(
     session: AsyncSession = Depends(get_session),
 ) -> BookingOut:
     return await service.cancel_my_booking(session, principal, booking_id, body.reason if body else None, locale)
+
+
+class QrOut(BaseModel):
+    token: str
+
+
+@router.get(
+    "/{booking_id}/qr", response_model=QrOut, summary="Token del QR de mi reserva confirmada (sin datos personales)"
+)
+async def my_qr(
+    booking_id: uuid.UUID,
+    principal: Principal = Depends(require_permission("booking:read_own")),
+    session: AsyncSession = Depends(get_session),
+) -> QrOut:
+    return QrOut(token=await service.qr_for_booking(session, principal.user.id, booking_id))

@@ -17,6 +17,7 @@ from app.modules.bookings import admin_router as bookings_admin_router
 from app.modules.bookings import router as bookings_router
 from app.modules.courses import admin_router as courses_admin_router
 from app.modules.courses import router as courses_router
+from app.modules.notifications import router as notifications_router
 from app.modules.payments import router as payments_router
 from app.modules.users import router as users_router
 
@@ -61,6 +62,7 @@ def create_app() -> FastAPI:
     api_v1.include_router(bookings_router.router)
     api_v1.include_router(bookings_admin_router.router)
     api_v1.include_router(payments_router.router)
+    api_v1.include_router(notifications_router.router)
     api_v1.include_router(payments_router.admin_router)
     if payments_router.dev_enabled():
         api_v1.include_router(payments_router.dev_router)

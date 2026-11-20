@@ -32,6 +32,10 @@ services:
       POSTGRES_PORT: "5432"
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en .env}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-dev-only-webhook-secret-change-me}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       db: { condition: service_healthy }
     networks: [internal]
@@ -52,6 +56,25 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+
+  worker:
+    build: ./backend
+    command: ["python", "-m", "app.worker"]
+    environment:
+      <<: *backend-env
+    healthcheck:
+      disable: true # el worker no sirve HTTP (el healthcheck de la imagen no aplica)
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    networks: [internal]
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "127.0.0.1:8025:8025" # bandeja de correos de desarrollo
+    networks: [internal]
 
 networks:
   edge: {}

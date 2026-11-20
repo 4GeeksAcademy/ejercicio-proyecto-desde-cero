@@ -2,6 +2,7 @@ import uuid
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
@@ -75,3 +76,20 @@ async def cancel_course(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, int]:
     return {"bookings_cancelled": await service.cancel_course(session, course_id, principal, body.reason)}
+
+
+class CheckInRequest(BaseModel):
+    token: str = Field(min_length=10, max_length=200)
+
+
+class CheckInOut(BaseModel):
+    first_time: bool
+    booking: AdminBookingOut
+
+
+@router.post("/checkin", response_model=CheckInOut, summary="Registrar asistencia escaneando el QR")
+async def checkin(
+    body: CheckInRequest, principal: Principal = Approver, session: AsyncSession = Depends(get_session)
+) -> CheckInOut:
+    booking, first = await service.check_in(session, principal, body.token)
+    return CheckInOut(first_time=first, booking=booking)

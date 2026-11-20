@@ -20,9 +20,18 @@ class Notification(UUIDMixin, TimestampMixin, Base):
     last_error: Mapped[str | None] = mapped_column(Text)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    dedupe_key: Mapped[str | None] = mapped_column(String(120))  # evita duplicados (p. ej. 1 recordatorio por reserva)
     __table_args__ = (
         CheckConstraint("channel IN ('in_app', 'email', 'whatsapp')", name="channel_valid"),
         CheckConstraint("status IN ('PENDING', 'SENT', 'FAILED')", name="status_valid"),
+        Index(
+            "uq_notifications_dedupe",
+            "user_id",
+            "channel",
+            "dedupe_key",
+            unique=True,
+            postgresql_where=text("dedupe_key IS NOT NULL"),
+        ),
         Index("ix_notifications_pending", "created_at", postgresql_where=text("status = 'PENDING'")),
     )
 
