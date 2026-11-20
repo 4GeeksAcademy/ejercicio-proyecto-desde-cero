@@ -1,0 +1,52 @@
+[project]
+name = "tallerya-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.20.1",
+    "argon2-cffi>=25.1.0",
+    "email-validator>=2.4.0",
+    "fastapi>=0.165.0",
+    "psycopg[binary]>=3.3.9",
+    "pydantic-settings>=2.16.3",
+    "pyjwt>=2.15.1",
+    "python-multipart>=0.0.34",
+    "sqlalchemy[asyncio]>=2.1.9",
+    "structlog>=26.1.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.6",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["migrations/versions"]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "ASYNC"]
+ignore = ["B008", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+"app/core/config.py" = ["S105"]  # valores por defecto SOLO de desarrollo
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["migrations"]

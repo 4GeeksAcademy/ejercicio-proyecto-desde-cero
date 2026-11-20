@@ -1,0 +1,61 @@
+# Entorno de desarrollo reproducible. Uso: cp .env.example .env && docker compose up --build
+name: tallerya
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tallerya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:-tallerya}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_PUBLISHED_PORT:-5432}:5432" # solo localhost (dev)
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment: &backend-env
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      POSTGRES_USER: ${POSTGRES_USER:-tallerya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-tallerya}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en .env}
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [internal]
+    restart: "no"
+
+  backend:
+    build: ./backend
+    environment: *backend-env
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    networks: [internal, edge]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/ready').status==200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+networks:
+  edge: {}
+  internal: {}
+
+volumes:
+  pgdata: {}
