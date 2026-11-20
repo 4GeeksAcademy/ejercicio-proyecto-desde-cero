@@ -87,6 +87,20 @@ export default async function CoursePage({ params }: { params: Promise<{ locale:
       <RegisterAlternates alternates={c.alternates} />
       <TrackView courseId={c.id} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Tallerya", item: SITE + getPathname({ locale, href: "/" }) },
+              { "@type": "ListItem", position: 2, name: t("breadcrumbCourses"), item: SITE + getPathname({ locale, href: "/courses" }) },
+              { "@type": "ListItem", position: 3, name: c.name, item: urlFor(locale, c.slug) },
+            ],
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
       <div className="space-y-6 lg:col-span-2">
         <header>
           <p className="text-sm font-semibold uppercase tracking-wide text-brand">{c.category.name}</p>

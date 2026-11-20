@@ -3,7 +3,8 @@ import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import type { CoursePage } from "@/lib/types";
 
-export const revalidate = 3600;
+// Dinámico: si se generara en el build, quedaría sin cursos (la API aún no existe). El fetch cachea 1 h.
+export const dynamic = "force-dynamic";
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 async function allCourses(locale: string): Promise<CoursePage["items"]> {

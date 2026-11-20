@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Alert } from "@/components/ui/Alert";
 import { titled } from "@/lib/meta";
 
-export const generateMetadata = titled("legal", "privacyTitle");
+export const generateMetadata = titled("legal", "privacyTitle", false, "/privacy");
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

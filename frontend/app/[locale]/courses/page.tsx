@@ -5,6 +5,8 @@ import type { Category, CoursePage } from "@/lib/types";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { CourseFilters } from "@/components/courses/CourseFilters";
 import { Pagination } from "@/components/courses/Pagination";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { type Loc, absoluteUrl, pageAlternates } from "@/lib/seo";
 
 const PAGE_SIZE = 12;
 type SP = Promise<Record<string, string | string[] | undefined>>;
@@ -13,7 +15,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo" });
-  return { title: { absolute: t("coursesTitle") }, description: t("homeDesc") };
+  return { title: { absolute: t("coursesTitle") }, description: t("homeDesc"), alternates: pageAlternates(locale as Loc, "/courses") };
 }
 
 export default async function CoursesPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: SP }) {
@@ -37,6 +39,19 @@ export default async function CoursesPage({ params, searchParams }: { params: Pr
 
   return (
     <div className="space-y-6">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: t("title"),
+          itemListElement: data.items.map((c, i) => ({
+            "@type": "ListItem",
+            position: i + 1 + data.offset,
+            url: absoluteUrl(locale as Loc, { pathname: "/courses/[slug]", params: { slug: c.slug } }),
+            name: c.name,
+          })),
+        }}
+      />
       <h1 className="text-3xl font-bold">{t("title")}</h1>
       <CourseFilters categories={categories} values={{ q, category, sort, available }} />
       <p aria-live="polite" className="text-sm text-muted">{t("count", { count: data.total })}</p>

@@ -8,7 +8,7 @@ from tests.factories import make_course, make_user
 
 
 async def test_only_read_only_tools_exist():
-    assert READ_ONLY_TOOLS == {"search_courses", "get_course_details", "check_availability"}
+    assert READ_ONLY_TOOLS == {"search_courses", "get_course_details", "check_availability", "get_business_info"}
     assert not any(w in t["name"] for t in TOOL_DEFINITIONS for w in ("book", "pay", "cancel", "refund", "reserve"))
     json.dumps(TOOL_DEFINITIONS)  # las definiciones son JSON puro (compatibles con APIs de tool use)
 
@@ -55,3 +55,22 @@ async def test_tools_never_change_data(session):
     ]:
         await execute_tool(session, name, args)
     assert (await session.execute(select(func.count()).select_from(Booking))).scalar_one() == 0
+
+
+async def test_tools_return_public_urls_and_business_data(session):
+    c = await make_course(session, slug="ceramica-real")
+    await session.commit()
+    s = await execute_tool(session, "search_courses", {})
+    assert s["courses"][0]["url"].endswith("/es/cursos/ceramica-real") and s["courses"][0]["url"].startswith("http")
+    d = await execute_tool(session, "get_course_details", {"slug": "ceramica-real"})
+    assert (
+        d["url"].endswith("/es/cursos/ceramica-real")
+        and d["venue_city"] == "Bogotá"
+        and d["urls_by_locale"]["es"] == d["url"]
+    )
+    en = await execute_tool(session, "search_courses", {"locale": "en"})
+    assert en["courses"] == []  # sin traducción al inglés no aparece (no inventa)
+    b = await execute_tool(session, "get_business_info", {})
+    assert b["name"] == "Tallerya" and b["catalog_url"].endswith("/es/cursos") and b["city"] == "Bogotá"
+    assert (await execute_tool(session, "get_business_info", {"locale": "en"}))["catalog_url"].endswith("/en/courses")
+    _ = c

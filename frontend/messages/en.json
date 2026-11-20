@@ -98,7 +98,8 @@
     "payWithin": "You will have 24 hours to complete payment.",
     "language": "Workshop language",
     "alreadyBooked": "You already have a booking for this course.",
-    "viewBooking": "View my booking"
+    "viewBooking": "View my booking",
+    "breadcrumbCourses": "Courses"
   },
   "booking": {
     "title": "My bookings",

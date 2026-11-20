@@ -98,7 +98,8 @@
     "payWithin": "Tendrás 24 horas para completar el pago.",
     "language": "Idioma del taller",
     "alreadyBooked": "Ya tienes una reserva para este curso.",
-    "viewBooking": "Ver mi reserva"
+    "viewBooking": "Ver mi reserva",
+    "breadcrumbCourses": "Cursos"
   },
   "booking": {
     "title": "Mis reservas",

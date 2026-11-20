@@ -5,17 +5,25 @@ import { serverGet } from "@/lib/api";
 import type { Category, CoursePage } from "@/lib/types";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { buttonClass } from "@/components/ui/Button";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { type Loc, organizationLd, pageAlternates } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo" });
-  return { title: { absolute: t("homeTitle") }, description: t("homeDesc") };
+  return {
+    title: { absolute: t("homeTitle") },
+    description: t("homeDesc"),
+    alternates: pageAlternates(locale as Loc, "/"),
+    openGraph: { title: t("homeTitle"), description: t("homeDesc"), url: pageAlternates(locale as Loc, "/").canonical as string },
+  };
 }
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("home");
+  const seo = await getTranslations("seo");
   const [courses, categories] = await Promise.all([
     serverGet<CoursePage>(`/courses?locale=${locale}&limit=6`).catch(() => null),
     serverGet<Category[]>(`/categories?locale=${locale}`).catch(() => []),
@@ -23,6 +31,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
   return (
     <div className="space-y-16">
+      <JsonLd data={organizationLd(locale as Loc, seo("homeDesc"))} />
       <section className="rounded-2xl bg-brand-soft px-6 py-14 text-center sm:px-12">
         <h1 className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl">{t("title")}</h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">{t("subtitle")}</p>

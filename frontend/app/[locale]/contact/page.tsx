@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { titled } from "@/lib/meta";
 
-export const generateMetadata = titled("contact", "title");
+export const generateMetadata = titled("contact", "title", false, "/contact");
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

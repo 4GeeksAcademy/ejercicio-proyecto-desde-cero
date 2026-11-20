@@ -14,6 +14,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.errors import AppError, BusinessRuleError
 from app.modules.courses import service as courses
 
@@ -36,6 +37,44 @@ class GetCourseDetailsArgs(BaseModel):
     locale: Locale = "es"
 
 
+class BusinessInfoArgs(BaseModel):
+    locale: Locale = "es"
+
+
+def public_course_url(locale: str, slug: str) -> str:
+    """URL pública del curso. Debe coincidir con las rutas del frontend (frontend/i18n/routing.ts)."""
+    base = get_settings().frontend_url.rstrip("/")
+    return f"{base}/es/cursos/{slug}" if locale == "es" else f"{base}/en/courses/{slug}"
+
+
+def business_info(locale: str) -> dict[str, Any]:
+    base = get_settings().frontend_url.rstrip("/")
+    es = locale == "es"
+    return {
+        "name": "Tallerya",
+        "website": f"{base}/{locale}",
+        "catalog_url": f"{base}/es/cursos" if es else f"{base}/en/courses",
+        "faq_url": f"{base}/es/preguntas-frecuentes" if es else f"{base}/en/faq",
+        "contact_url": f"{base}/es/contacto" if es else f"{base}/en/contact",
+        "city": "Bogotá",
+        "country": "Colombia",
+        "timezone": "America/Bogota",
+        "description": (
+            "Academia de talleres presenciales de un día: cerámica, fotografía, cocina, costura, mecánica, arte y manualidades."
+            if es
+            else "Academy of one-day in-person workshops: ceramics, photography, cooking, sewing, mechanics, art and crafts."
+        ),
+        "languages": ["es", "en"],
+        "booking_rules": (
+            "Una reserva por persona; no se reserva con menos de 24 h de antelación; 24 h para pagar; se cancela si faltan más de 24 h. "
+            "Reservar y pagar se hace en el sitio web con una cuenta."
+            if es
+            else "One booking per person; no bookings within 24 h of the start; 24 h to pay; cancellable if more than 24 h remain. "
+            "Booking and payment are done on the website with an account."
+        ),
+    }
+
+
 class CheckAvailabilityArgs(BaseModel):
     course_id: uuid.UUID
 
@@ -50,6 +89,11 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         "name": "get_course_details",
         "description": "Detalle de un curso por su slug (descripción, materiales, requisitos, lugar).",
         "input_schema": GetCourseDetailsArgs.model_json_schema(),
+    },
+    {
+        "name": "get_business_info",
+        "description": "Datos de Tallerya (nombre, ciudad, URL del sitio, catálogo, contacto y reglas de reserva). Úsala para dar la URL del negocio.",
+        "input_schema": BusinessInfoArgs.model_json_schema(),
     },
     {
         "name": "check_availability",
@@ -90,6 +134,7 @@ async def execute_tool(session: AsyncSession, name: str, arguments: dict[str, An
                         "slug": c.slug,
                         "name": c.name,
                         "category": c.category.name,
+                        "url": public_course_url(a.locale, c.slug),
                         "starts_at": c.starts_at.isoformat(),
                         "price_minor": c.price_minor,
                         "currency": c.currency,
@@ -106,6 +151,11 @@ async def execute_tool(session: AsyncSession, name: str, arguments: dict[str, An
                 "slug": d.slug,
                 "name": d.name,
                 "short_description": d.short_description,
+                "url": public_course_url(a2.locale, d.slug),
+                "urls_by_locale": {loc: public_course_url(loc, slug) for loc, slug in d.alternates.items()},
+                "venue_name": d.venue.name,
+                "venue_city": d.venue.city,
+                "maps_url": d.venue.maps_url,
                 "description": d.description[:1500],
                 "materials": d.materials,
                 "requirements": d.requirements,
@@ -117,6 +167,8 @@ async def execute_tool(session: AsyncSession, name: str, arguments: dict[str, An
                 "seats_available": d.seats_available,
                 "booking_open": d.booking_open,
             }
+        if name == "get_business_info":
+            return business_info(BusinessInfoArgs.model_validate(arguments).locale)
         a3 = CheckAvailabilityArgs.model_validate(arguments)
         av = await courses.get_availability(session, a3.course_id)
         return av.model_dump(mode="json")
