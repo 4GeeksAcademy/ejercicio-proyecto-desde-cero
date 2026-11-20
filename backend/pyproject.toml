@@ -51,3 +51,8 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["migrations"]
+
+[tool.coverage.run]
+source = ["app"]
+concurrency = ["greenlet", "thread"]  # SQLAlchemy async ejecuta el código dentro de greenlets
+omit = ["app/cli.py", "app/seed_demo.py"]  # scripts de operación, no lógica de negocio
