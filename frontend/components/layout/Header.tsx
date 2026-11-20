@@ -16,7 +16,7 @@ export function Header() {
   return (
     <header className="border-b border-line bg-surface-2">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3">
-        <Link href="/" className="text-xl font-extrabold tracking-tight text-brand">
+        <Link href="/" className="text-3xl font-extrabold tracking-tight text-brand sm:text-4xl">
           {app("appName")}
         </Link>
         <nav aria-label={t("main")} className="flex flex-wrap items-center gap-1 text-sm font-medium">
