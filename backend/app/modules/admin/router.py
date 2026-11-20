@@ -1,6 +1,8 @@
 """Endpoints de administración transversales (usuarios y administradores)."""
 
 import uuid
+from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, EmailStr
@@ -9,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
 from app.core.errors import ConflictError, NotFoundError
+from app.modules.admin import insights
 from app.modules.audit import service as audit
 from app.modules.auth.dependencies import Principal, require_permission
 from app.modules.auth.models import Profile, Role, User
@@ -114,3 +117,46 @@ async def revoke_admin(
         resource_id=user.id,
     )
     await session.commit()
+
+
+class AuditOut(BaseModel):
+    id: int
+    actor_user_id: uuid.UUID | None
+    action: str
+    resource_type: str
+    resource_id: str | None
+    changes: dict[str, Any] | None
+    request_id: str | None
+    created_at: datetime
+
+
+class AuditPage(BaseModel):
+    items: list[AuditOut]
+    total: int
+    limit: int
+    offset: int
+
+
+@router.get("/audit-logs", response_model=AuditPage, summary="Registro de auditoría (solo propietario)")
+async def audit_logs(
+    action: str | None = Query(None, max_length=60),
+    resource_type: str | None = Query(None, max_length=40),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    _: Principal = Depends(require_permission("audit:read")),
+    session: AsyncSession = Depends(get_session),
+) -> AuditPage:
+    rows, total = await insights.list_audit(
+        session, action=action, resource_type=resource_type, limit=limit, offset=offset
+    )
+    return AuditPage(
+        items=[AuditOut.model_validate(r, from_attributes=True) for r in rows], total=total, limit=limit, offset=offset
+    )
+
+
+@router.get("/metrics", summary="Métricas de negocio para el dashboard")
+async def metrics(
+    principal: Principal = Depends(require_permission("metrics:read_business")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    return await insights.business_metrics(session, include_money=principal.can("commission:read"))
