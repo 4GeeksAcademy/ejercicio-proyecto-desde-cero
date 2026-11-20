@@ -9,6 +9,8 @@ os.environ["APP_ENV"] = "testing"
 os.environ["POSTGRES_DB"] = "tallerya_test"
 os.environ.setdefault("POSTGRES_HOST", "localhost")
 os.environ["BOOKING_RATE_LIMIT_PER_MINUTE"] = "10000"
+os.environ["OTEL_ENABLED"] = "false"  # los tests son herméticos: nunca exportan telemetría
+os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = ""
 
 import psycopg  # noqa: E402
 import pytest  # noqa: E402

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import clock
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, ExternalServiceError, NotFoundError
+from app.core.telemetry import counters, tracer
 from app.modules.audit import service as audit
 from app.modules.auth.dependencies import Principal
 from app.modules.bookings import service as bookings
@@ -194,6 +195,17 @@ async def handle_webhook(
     session: AsyncSession, provider_name: str, headers: Mapping[str, str], raw_body: bytes
 ) -> dict[str, str]:
     """Orden: 1) validar firma  2) confirmar con el proveedor  3) deduplicar  4) aplicar. Todo idempotente."""
+    with tracer().start_as_current_span("payment.webhook") as span:
+        span.set_attribute("payment.provider", provider_name)
+        result = await _handle_webhook(session, provider_name, headers, raw_body)
+        span.set_attribute("webhook.result", result["status"])
+        counters.add("tallerya.payment.webhooks", provider=provider_name, result=result["status"])
+        return result
+
+
+async def _handle_webhook(
+    session: AsyncSession, provider_name: str, headers: Mapping[str, str], raw_body: bytes
+) -> dict[str, str]:
     provider = get_provider(provider_name)
     event = provider.verify_webhook(headers, raw_body)  # 401 si la firma/fecha no son válidas
     authoritative = await provider.get_status(event.reference)  # no nos fiamos solo del payload

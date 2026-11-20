@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     booking_rate_limit_per_minute: int = 20
     worker_poll_seconds: int = 5
 
+    # Observabilidad (OpenTelemetry). Desactivada por defecto.
+    otel_enabled: bool = False
+    otel_exporter_otlp_endpoint: str = ""
+
     # Reglas de negocio configurables (Hito 5/6)
     booking_payment_window_hours: int = 24
     booking_cutoff_hours: int = 24

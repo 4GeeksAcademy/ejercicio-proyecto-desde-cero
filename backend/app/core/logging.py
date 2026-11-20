@@ -34,6 +34,16 @@ def redact_sensitive(_: Any, __: str, event_dict: MutableMapping[str, Any]) -> M
     return event_dict
 
 
+def add_trace_context(_: Any, __: str, event_dict: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
+    """Añade trace_id/span_id al log para saltar de un log a su traza completa."""
+    from app.core.telemetry import current_trace_ids
+
+    ids = current_trace_ids()
+    if ids:
+        event_dict["trace_id"], event_dict["span_id"] = ids
+    return event_dict
+
+
 def add_service_context(_: Any, __: str, event_dict: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
     s = get_settings()
     event_dict.setdefault("service", s.service_name)
@@ -51,6 +61,7 @@ def configure_logging() -> None:
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso", utc=True),
             add_service_context,
+            add_trace_context,
             redact_sensitive,
             structlog.processors.format_exc_info,
             structlog.processors.JSONRenderer(),

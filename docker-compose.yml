@@ -36,6 +36,8 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
     depends_on:
       db: { condition: service_healthy }
     networks: [internal]
@@ -84,6 +86,15 @@ services:
       migrate: { condition: service_completed_successfully }
     networks: [internal]
     restart: unless-stopped
+
+  # Observabilidad (opcional): docker compose --profile observability up -d
+  # y en .env: OTEL_ENABLED=true  OTEL_EXPORTER_OTLP_ENDPOINT=http://lgtm:4318
+  lgtm:
+    image: grafana/otel-lgtm:0.11.0 # Grafana + Tempo (trazas) + Prometheus (métricas) + Loki + colector OTLP
+    profiles: [observability]
+    ports:
+      - "127.0.0.1:3001:3000" # Grafana (usuario/clave por defecto de desarrollo: admin/admin)
+    networks: [internal]
 
   mailpit:
     image: axllent/mailpit:v1.21

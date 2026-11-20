@@ -11,6 +11,7 @@ from app.core.db import dispose_engine
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
+from app.core.telemetry import setup_telemetry
 from app.modules.admin import router as admin_router
 from app.modules.auth import router as auth_router
 from app.modules.bookings import admin_router as bookings_admin_router
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestContextMiddleware)
     register_exception_handlers(app)
+    setup_telemetry(app)
     app.include_router(health.router)
     api_v1 = APIRouter(prefix="/api/v1")
     api_v1.include_router(auth_router.router)

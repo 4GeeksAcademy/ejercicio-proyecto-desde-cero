@@ -21,6 +21,7 @@ from sqlalchemy.orm import lazyload
 from app.core import clock
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError
+from app.core.telemetry import counters, tracer
 from app.modules.audit import service as audit
 from app.modules.auth.dependencies import Principal
 from app.modules.bookings.availability import holding_condition, seats_taken
@@ -82,6 +83,7 @@ async def apply_transition(
     if extra:
         payload.update(extra)
     events.emit(session, event.value, "booking", booking.id, payload)
+    counters.add("tallerya.booking.transitions", event=event.value, to_status=target.value)
     log.info("booking_transition", event_name=event.value, booking_id=str(booking.id), status=target.value)
 
 
@@ -173,6 +175,14 @@ async def create_booking(
     session: AsyncSession, principal: Principal, course_id: uuid.UUID, idempotency_key: str | None, locale: str = "es"
 ) -> tuple[BookingOut, bool]:
     """Devuelve (reserva, creada_ahora). `creada_ahora=False` => respuesta repetida por Idempotency-Key."""
+    with tracer().start_as_current_span("booking.create") as span:
+        span.set_attribute("course.id", str(course_id))
+        return await _create_booking(session, principal, course_id, idempotency_key, locale)
+
+
+async def _create_booking(
+    session: AsyncSession, principal: Principal, course_id: uuid.UUID, idempotency_key: str | None, locale: str
+) -> tuple[BookingOut, bool]:
     user_id = principal.user.id
     request_hash = hashlib.sha256(f"booking.create:{course_id}".encode()).hexdigest()
 
