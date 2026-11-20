@@ -35,3 +35,5 @@ pgdata/
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
+
+backups/

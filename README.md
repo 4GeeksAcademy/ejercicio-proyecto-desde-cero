@@ -11,8 +11,10 @@ Plataforma web para una academia de **talleres presenciales de un día en Bogot�
 | 0 Discovery · 1 Base/Docker · 2 BD + migraciones · 3 Auth/RBAC · 4 Cursos · 5 Reservas · 6 Pagos/comisión | ✅ hecho y probado |
 | 7 Notificaciones + QR · 9 Worker asíncrono | ✅ (WhatsApp y función exacta del QR: pendientes del cliente) |
 | 8 Frontend (i18n, SEO, a11y, admin) · 12 Tests (unit/integración/E2E) | ✅ |
-| 14 CI | ✅ definido en `.github/workflows/ci.yml` (no ejecutado aún en GitHub) |
-| 10 Telemetría (OpenTelemetry) · 11 Pipeline de analítica · 13 Auditoría de rendimiento · 15 Asistente IA · 16 Producción | ⏳ pendientes |
+| 10 Telemetría (OpenTelemetry: trazas + métricas + logs con `trace_id`) · 11 Pipeline de analítica | ✅ (verificado hasta Tempo/Prometheus) |
+| 15 Asistente IA | 🟡 capa de herramientas de solo lectura lista y probada; **falta integrar el modelo** ([ADR-0007](docs/adr/0007-asistente-ia.md)) |
+| 14 CI | 🟡 definido en `.github/workflows/ci.yml`, **aún no ejecutado en GitHub** (cada paso se probó en local) |
+| 13 Rendimiento/seguridad: auditoría medida · 16 Producción (hosting, dominio, staging) | ⏳ pendientes |
 
 ## Arquitectura
 
@@ -56,6 +58,9 @@ TALLERYA_PASSWORD='<elige-una>' docker compose exec -e TALLERYA_PASSWORD backend
 
 El pago usa un **proveedor simulado** (`PAYMENT_PROVIDER=fake`): en la pantalla de pago hay botones para simular éxito o fallo. En `staging/production` la aplicación se niega a arrancar con el proveedor `fake` o con secretos por defecto.
 
+### Observabilidad (opcional)
+`docker compose --profile observability up -d` levanta Grafana (http://localhost:3001, `admin/admin` solo en desarrollo). Con `OTEL_ENABLED=true` y `OTEL_EXPORTER_OTLP_ENDPOINT=http://lgtm:4318` en `.env`, el backend envía trazas y métricas. Analítica de negocio: `/api/v1/admin/analytics`; reconstruirla: `python -m app.cli rebuild-analytics`.
+
 ## Variables de entorno
 Ver [`.env.example`](.env.example). Nunca subas `.env`. `JWT_SECRET` y `PAYMENT_WEBHOOK_SECRET` son obligatorios fuera de desarrollo.
 
@@ -63,7 +68,7 @@ Ver [`.env.example`](.env.example). Nunca subas `.env`. `JWT_SECRET` y `PAYMENT_
 
 ```bash
 docker compose up -d db
-cd backend  && POSTGRES_HOST=localhost uv run pytest --cov=app   # 141 tests, ~93 % cobertura (PostgreSQL real)
+cd backend  && POSTGRES_HOST=localhost uv run pytest --cov=app   # 149+ tests, ~93 % cobertura (PostgreSQL real)
             && uv run ruff check . && uv run mypy app
 cd frontend && npm run lint && npm run typecheck && npm test      # unit + i18n
             && npm run e2e                                         # requiere el stack levantado y un admin (ver e2e/)
@@ -78,7 +83,7 @@ cd ../frontend && npm run api:types
 
 ## Base de datos
 Migraciones con Alembic (`backend/migrations`). `alembic upgrade head` al arrancar (servicio `migrate`). El CI comprueba que no haya desviaciones entre modelos y migraciones (`alembic check`).
-**Backups:** [PENDIENTE] definir en producción; un backup solo es válido cuando la restauración se ha comprobado (ver `docs/` cuando se redacte el runbook).
+**Backups:** `scripts/backup.sh` crea un volcado y `scripts/restore-check.sh <archivo>` lo restaura en una BD temporal y verifica la integridad (reservas huérfanas/duplicadas, sobreventa, comisiones). Un backup no es válido hasta que ese script pasa. Frecuencia, retención, cifrado y copia fuera del servidor: **[PENDIENTE]** al elegir hosting.
 
 ## Estructura
 ```
