@@ -33,6 +33,15 @@ async def create_user(email: str, name: str, phone: str, role_name: str, passwor
     print(f"Usuario {email} creado con rol {role_name}")
 
 
+async def _rebuild() -> None:
+    from app.modules.analytics.pipeline import rebuild
+
+    async with get_sessionmaker()() as s:
+        n = await rebuild(s)
+    await dispose_engine()
+    print(f"Analítica reconstruida: {n} eventos cargados")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="app.cli")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -42,7 +51,11 @@ def main() -> None:
     cu.add_argument("--phone", required=True)
     cu.add_argument("--role", choices=["CLIENT", "ADMIN", "OWNER"], default="CLIENT")
     sub.add_parser("seed-demo", help="Datos de demostración (solo desarrollo)")
+    sub.add_parser("rebuild-analytics", help="Reconstruye la analítica desde el outbox")
     args = parser.parse_args()
+    if args.cmd == "rebuild-analytics":
+        asyncio.run(_rebuild())
+        return
     if args.cmd == "seed-demo":
         from app.seed_demo import seed
 

@@ -2,10 +2,11 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
+from app.core.rate_limit import rate_limit
 from app.modules.courses import service
 from app.modules.courses.schemas import Availability, CategoryOut, CourseDetail, CoursePage
 
@@ -60,3 +61,17 @@ async def course_detail(slug: str, locale: Locale = "es", session: AsyncSession 
 @router.get("/courses/{course_id}/availability", response_model=Availability, summary="Plazas disponibles")
 async def availability(course_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> Availability:
     return await service.get_availability(session, course_id)
+
+
+_view_limit = rate_limit("course-view", limit=120, window_seconds=60)
+
+
+@router.post(
+    "/courses/{course_id}/view",
+    status_code=204,
+    dependencies=[Depends(_view_limit)],
+    summary="Registrar una visita (anónima, sin datos personales)",
+)
+async def course_viewed(course_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> Response:
+    await service.record_view(session, course_id)
+    return Response(status_code=204)

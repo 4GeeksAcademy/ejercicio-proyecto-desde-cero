@@ -267,7 +267,12 @@
       "approval": "Requires manual approval",
       "recorded": "Will be recorded (YouTube)"
     },
-    "commissionRate": "Current commission"
+    "commissionRate": "Current commission",
+    "analytics": "Analytics (30 days)",
+    "views": "Views",
+    "bookingsCreated": "Bookings created",
+    "bookingsConfirmed": "Bookings confirmed",
+    "conversion": "View → booking"
   },
   "faq": {
     "title": "Frequently asked questions",

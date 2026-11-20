@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import clock
+from app.modules.analytics import pipeline
 from app.modules.bookings.models import Booking
 from app.modules.core_events.models import DomainEvent
 from app.modules.courses.models import Course
@@ -37,6 +38,7 @@ async def process_outbox(session: AsyncSession, batch_size: int = 100) -> int:
             async with session.begin_nested():  # SAVEPOINT: si el handler falla, solo se deshace ESE evento
                 if handler:
                     await handler(session, ev)
+                await pipeline.consume(session, ev)  # analítica: validar → transformar → cargar
                 ev.processed_at = clock.now()
             done += 1
         except Exception as exc:

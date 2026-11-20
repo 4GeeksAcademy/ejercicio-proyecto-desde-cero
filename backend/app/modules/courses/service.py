@@ -427,3 +427,14 @@ async def create_venue(session: AsyncSession, data: VenueCreate, actor_id: uuid.
     await audit.record(session, actor_id=actor_id, action="venue.created", resource_type="venue", resource_id=venue.id)
     await session.commit()
     return venue
+
+
+async def record_view(session: AsyncSession, course_id: uuid.UUID) -> None:
+    """Evento `course_viewed` para analítica. Sin IP, sin usuario: solo qué curso se vio y cuándo."""
+    from app.modules.core_events import service as events
+
+    course = await session.get(Course, course_id)
+    if course is None or course.status not in PUBLIC_STATUSES:
+        raise NotFoundError("Curso no encontrado.")
+    events.emit(session, "course_viewed", "course", course_id, {"course_id": str(course_id)})
+    await session.commit()

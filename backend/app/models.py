@@ -1,5 +1,6 @@
 """Importa TODOS los modelos para que Alembic y SQLAlchemy los conozcan."""
 
+from app.modules.analytics.models import AnalyticsEvent, DailyCourseMetrics
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import (
     PasswordResetToken,
@@ -26,6 +27,8 @@ from app.modules.notifications.models import Notification, NotificationPreferenc
 from app.modules.payments.models import AppSetting, Commission, Payment, PaymentEvent
 
 __all__ = [
+    "AnalyticsEvent",
+    "DailyCourseMetrics",
     "AppSetting",
     "AuditLog",
     "Booking",

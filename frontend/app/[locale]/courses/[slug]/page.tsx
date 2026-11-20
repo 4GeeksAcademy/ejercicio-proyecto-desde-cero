@@ -8,6 +8,7 @@ import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { BookButton } from "@/components/courses/BookButton";
 import { RegisterAlternates } from "@/components/layout/alternates";
+import { TrackView } from "@/components/courses/TrackView";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -84,6 +85,7 @@ export default async function CoursePage({ params }: { params: Promise<{ locale:
   return (
     <article className="grid gap-8 lg:grid-cols-3">
       <RegisterAlternates alternates={c.alternates} />
+      <TrackView courseId={c.id} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div className="space-y-6 lg:col-span-2">
         <header>

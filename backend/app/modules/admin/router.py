@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.core.errors import ConflictError, NotFoundError
 from app.modules.admin import insights
+from app.modules.analytics import pipeline
 from app.modules.audit import service as audit
 from app.modules.auth.dependencies import Principal, require_permission
 from app.modules.auth.models import Profile, Role, User
@@ -160,3 +161,12 @@ async def metrics(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
     return await insights.business_metrics(session, include_money=principal.can("commission:read"))
+
+
+@router.get("/analytics", summary="Analítica de negocio: vistas, reservas, conversión (desde el pipeline)")
+async def analytics(
+    days: int = Query(30, ge=1, le=365),
+    _: Principal = Depends(require_permission("metrics:read_business")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    return await pipeline.dashboard(session, days)

@@ -16,6 +16,11 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def include_name(name: str | None, type_: str, parent_names: dict[str, str | None]) -> bool:
+    # Solo gestionamos el esquema por defecto y `analytics` (ignora esquemas del sistema).
+    return name in (None, "public", "analytics") if type_ == "schema" else True
+
+
 def run_migrations_offline() -> None:
     context.configure(url=get_settings().database_url, target_metadata=target_metadata, literal_binds=True)
     with context.begin_transaction():
@@ -23,7 +28,13 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection) -> None:  # type: ignore[no-untyped-def]
-    context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        include_schemas=True,
+        include_name=include_name,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

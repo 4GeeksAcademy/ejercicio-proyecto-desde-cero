@@ -22,7 +22,7 @@ from app.core.config import get_settings  # noqa: E402
 from app.core.db import dispose_engine, get_sessionmaker  # noqa: E402
 
 DATA_TABLES = (
-    "audit_logs, app_settings, domain_events, notifications, notification_preferences, commissions, payment_events, "
+    "analytics.events, analytics.daily_course_metrics, audit_logs, app_settings, domain_events, notifications, notification_preferences, commissions, payment_events, "
     "payments, idempotency_keys, booking_status_history, bookings, course_translations, courses, "
     "category_translations, categories, venues, instructors, user_consents, password_reset_tokens, "
     "refresh_tokens, user_roles, profiles, users"

@@ -26,6 +26,46 @@ function Stat({ label, value, href }: { label: string; value: number; href?: "/a
   return href ? <Link href={href} className={`${cls} block hover:bg-brand-soft`}>{inner}</Link> : <div className={cls}>{inner}</div>;
 }
 
+type Analytics = {
+  by_course: { course_id: string; name: string; views: number; created: number; confirmed: number; view_to_booking_pct: number | null; confirmation_pct: number | null }[];
+};
+
+function AnalyticsTable() {
+  const t = useTranslations("admin");
+  const { data } = useApiData<Analytics>("/admin/analytics?days=30");
+  if (!data || data.by_course.length === 0) return null;
+  return (
+    <section aria-labelledby="ana">
+      <h2 id="ana" className="mb-3 text-xl font-bold">{t("analytics")}</h2>
+      <div className="overflow-x-auto rounded-xl border border-line bg-surface-2">
+        <table className="min-w-full text-left text-sm">
+          <caption className="sr-only">{t("analytics")}</caption>
+          <thead className="border-b border-line bg-brand-soft">
+            <tr>
+              <th scope="col" className="px-4 py-3">{t("course")}</th>
+              <th scope="col" className="px-4 py-3">{t("views")}</th>
+              <th scope="col" className="px-4 py-3">{t("bookingsCreated")}</th>
+              <th scope="col" className="px-4 py-3">{t("bookingsConfirmed")}</th>
+              <th scope="col" className="px-4 py-3">{t("conversion")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.by_course.map((c) => (
+              <tr key={c.course_id} className="border-b border-line last:border-0">
+                <td className="px-4 py-3 font-medium">{c.name}</td>
+                <td className="px-4 py-3">{c.views}</td>
+                <td className="px-4 py-3">{c.created}</td>
+                <td className="px-4 py-3">{c.confirmed}</td>
+                <td className="px-4 py-3">{c.view_to_booking_pct === null ? "—" : `${c.view_to_booking_pct} %`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export function Dashboard() {
   const t = useTranslations("admin");
   const locale = useLocale();
@@ -58,6 +98,7 @@ export function Dashboard() {
           ))}
         </ul>
       </section>
+      <AnalyticsTable />
       {data.revenue_by_currency ? (
         <section aria-labelledby="rev">
           <h2 id="rev" className="mb-3 text-xl font-bold">{t("revenue")}</h2>
