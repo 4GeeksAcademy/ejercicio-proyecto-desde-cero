@@ -95,7 +95,7 @@ export default async function CoursePage({ params }: { params: Promise<{ locale:
         </header>
         {c.cover_image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.cover_image_url} alt={c.cover_image_alt ?? ""} className="aspect-video w-full rounded-xl object-cover" />
+          <img src={c.cover_image_url} alt={c.cover_image_alt ?? ""} className="aspect-video w-full rounded-xl object-cover object-[50%_30%]" />
         ) : null}
         <section aria-labelledby="about">
           <h2 id="about" className="text-xl font-bold">{t("description")}</h2>

@@ -18,7 +18,7 @@ export async function CourseCard({ course }: { course: CourseSummary }) {
     <article className="relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface-2 shadow-sm transition hover:shadow-md">
       {course.cover_image_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={course.cover_image_url} alt={course.cover_image_alt ?? ""} loading="lazy" className="aspect-video w-full object-cover" />
+        <img src={course.cover_image_url} alt={course.cover_image_alt ?? ""} loading="lazy" className="aspect-video w-full object-cover object-[50%_30%]" />
       ) : (
         <div aria-hidden="true" className="flex aspect-video items-center justify-center bg-brand-soft text-5xl">🎨</div>
       )}
