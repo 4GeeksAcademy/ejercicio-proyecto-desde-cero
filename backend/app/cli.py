@@ -41,7 +41,13 @@ def main() -> None:
     cu.add_argument("--name", required=True)
     cu.add_argument("--phone", required=True)
     cu.add_argument("--role", choices=["CLIENT", "ADMIN", "OWNER"], default="CLIENT")
+    sub.add_parser("seed-demo", help="Datos de demostración (solo desarrollo)")
     args = parser.parse_args()
+    if args.cmd == "seed-demo":
+        from app.seed_demo import seed
+
+        asyncio.run(seed())
+        return
     password = os.environ.get("TALLERYA_PASSWORD") or getpass.getpass("Contraseña: ")
     if len(password) < 10:
         sys.exit("La contraseña debe tener al menos 10 caracteres")

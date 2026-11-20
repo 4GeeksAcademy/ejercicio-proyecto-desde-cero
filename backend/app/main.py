@@ -13,6 +13,8 @@ from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
 from app.modules.admin import router as admin_router
 from app.modules.auth import router as auth_router
+from app.modules.courses import admin_router as courses_admin_router
+from app.modules.courses import router as courses_router
 from app.modules.users import router as users_router
 
 
@@ -50,7 +52,9 @@ def create_app() -> FastAPI:
     api_v1 = APIRouter(prefix="/api/v1")
     api_v1.include_router(auth_router.router)
     api_v1.include_router(users_router.router)
+    api_v1.include_router(courses_router.router)
     api_v1.include_router(admin_router.router)
+    api_v1.include_router(courses_admin_router.router)
     app.include_router(api_v1)
     return app
 
