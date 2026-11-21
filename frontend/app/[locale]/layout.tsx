@@ -21,6 +21,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const t = await getTranslations({ locale, namespace: "seo" });
   return {
     metadataBase: new URL(SITE),
+    // Verificación de propiedad en Google Search Console (método "etiqueta HTML"). Se rellena con GOOGLE_SITE_VERIFICATION.
+    verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
     title: { default: t("homeTitle"), template: "%s · Tallerya" },
     description: t("homeDesc"),
     openGraph: { siteName: "Tallerya", type: "website", locale: locale === "es" ? "es_CO" : "en_US" },

@@ -74,6 +74,7 @@ services:
     environment:
       API_INTERNAL_URL: http://backend:8000
       NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-http://localhost:3000}
+      GOOGLE_SITE_VERIFICATION: ${GOOGLE_SITE_VERIFICATION:-}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

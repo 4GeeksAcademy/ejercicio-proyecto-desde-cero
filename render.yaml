@@ -71,3 +71,6 @@ services:
         value: https://tallerya-api.onrender.com
       - key: NEXT_PUBLIC_SITE_URL
         value: https://tallerya-web.onrender.com
+      # Código de verificación de Google Search Console (ver docs/seo-y-agentes.md). Se rellena en el panel.
+      - key: GOOGLE_SITE_VERIFICATION
+        sync: false

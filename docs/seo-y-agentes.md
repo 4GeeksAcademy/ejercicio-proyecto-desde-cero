@@ -14,12 +14,21 @@
 | **`llms.txt`**: resumen del negocio + cada curso con URL (ES/EN), fecha, lugar, precio y plazas | `/llms.txt` | Texto pensado para que un asistente cite la URL y los datos correctos |
 | Herramientas del asistente: `search_courses`, `get_course_details` y `get_business_info` devuelven la **URL pública** | `backend/app/modules/assistant` | Cuando se integre el modelo, responderá con enlaces reales |
 
-## Qué NO se puede hacer desde el código (pasos manuales al publicar)
-1. **Publicar en un dominio público.** Hoy corre en `localhost`; nadie fuera de esta máquina puede encontrarlo. Hace falta hosting + dominio + HTTPS.
-2. **Configurar `NEXT_PUBLIC_SITE_URL` y `FRONTEND_URL`** con ese dominio (las URLs canónicas, el sitemap y `llms.txt` salen de ahí).
-3. **Dar de alta el dominio en Google Search Console** y enviar `https://<dominio>/sitemap.xml`.
-4. Completar los datos reales del negocio cuando el cliente los dé (teléfono, redes, dirección exacta, logo): ahora no se inventan.
-5. **Google y los asistentes tardan** días o semanas en indexar; ninguna web puede garantizar posiciones.
+## Pasos para salir en Google (después de desplegar en Render o Vercel)
+Nada de esto se puede hacer desde el código: necesita tu cuenta de Google y la web ya publicada.
+
+1. **Despliega** la web ([despliegue.md](despliegue.md)) y comprueba que `https://<tu-web>/sitemap.xml` y `/llms.txt` muestran tu dirección real, no `localhost`.
+2. Entra en **https://search.google.com/search-console** con tu cuenta de Google → **Añadir propiedad** → tipo **"Prefijo de la URL"** → escribe `https://<tu-web>/`.
+3. **Verificar la propiedad** con el método **"Etiqueta HTML"**: Google te da un código (`content="..."`). Cópialo SOLO el valor.
+4. En Render (servicio `tallerya-web` → Environment) o en Vercel (Settings → Environment Variables) crea **`GOOGLE_SITE_VERIFICATION`** con ese valor y **vuelve a desplegar**. En 1-2 minutos, la portada incluirá la etiqueta. Vuelve a Search Console y pulsa **Verificar**.
+   - Si Google no la encuentra (la raíz `/` redirige a `/es`), usa un **dominio propio** y el método **DNS**, que es más fiable.
+5. En Search Console → **Sitemaps** → añade `sitemap.xml` → Enviar.
+6. En **Inspección de URL** pega `https://<tu-web>/es` y pulsa **Solicitar indexación**. Repite con 2 o 3 cursos.
+7. **Espera.** Puede tardar de unos días a un par de semanas. Para comprobar: busca `site:<tu-web>` en Google.
+
+**Con el plan gratuito de Render** la web se duerme y tarda 30-60 s en despertar; si Google llega en ese momento puede dar error y reintentarlo más tarde. Un dominio propio y un plan que no duerma ayudan mucho a indexar bien.
+
+Nadie puede garantizar en qué posición saldrá. Al principio aparecerá al buscar el nombre "Tallerya".
 
 ## Cómo comprobarlo
 - Prueba de resultados enriquecidos de Google (Rich Results Test) sobre la URL de un curso.
