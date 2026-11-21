@@ -131,9 +131,9 @@ jobs:
           context: frontend
           load: true
           tags: tallerya-frontend:ci
-      - name: Trivy (vulnerabilidades altas/críticas; imagen oficial con versión fija)
+      - name: Trivy (vulnerabilidades conocidas altas/críticas; los secretos los cubre gitleaks)
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/aquasecurity/trivy:0.76.2 \
-            image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress tallerya-backend:ci
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress tallerya-backend:ci
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/aquasecurity/trivy:0.76.2 \
-            image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress tallerya-frontend:ci
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress tallerya-frontend:ci
