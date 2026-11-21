@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getPathname } from "@/i18n/navigation";
 
-export const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+/** URL pública del sitio: la configurada, o la que Render asigna, o localhost en desarrollo. */
+const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "";
+export const SITE = (process.env.NEXT_PUBLIC_SITE_URL || process.env.RENDER_EXTERNAL_URL || vercel || "http://localhost:3000").replace(/\/$/, "");
 export type Loc = "es" | "en";
 type Href = Parameters<typeof getPathname>[0]["href"];
 

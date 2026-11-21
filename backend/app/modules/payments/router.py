@@ -80,7 +80,7 @@ async def simulate(
 
 
 def dev_enabled() -> bool:
-    return get_settings().app_env in ("development", "testing")
+    return get_settings().dev_endpoints_enabled
 
 
 # --- Administración -----------------------------------------------------------------------------------------

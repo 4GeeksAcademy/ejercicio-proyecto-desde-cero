@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -27,7 +28,16 @@ from app.modules.users import router as users_router
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     structlog.get_logger().info("startup", event_name="startup")
+    stop = asyncio.Event()
+    embedded: asyncio.Task[None] | None = None
+    if get_settings().embedded_worker:
+        from app.worker.__main__ import worker_loop
+
+        embedded = asyncio.create_task(worker_loop(stop))
     yield
+    stop.set()
+    if embedded is not None:
+        await embedded
     await dispose_engine()
 
 

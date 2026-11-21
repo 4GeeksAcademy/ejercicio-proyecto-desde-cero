@@ -5,7 +5,8 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 // El navegador SOLO habla con este mismo origen: /api/* se reenvía al backend.
 // Así las cookies httpOnly son "same-site" y no hace falta abrir CORS ni complicar el CSRF.
-const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
+const RAW_API = (process.env.API_INTERNAL_URL || "http://localhost:8000").replace(/\/$/, "");
+const API_INTERNAL_URL = /^https?:\/\//.test(RAW_API) ? RAW_API : `http://${RAW_API}`;
 
 const nextConfig: NextConfig = {
   output: "standalone",

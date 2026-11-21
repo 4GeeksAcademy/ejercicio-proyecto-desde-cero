@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import { SITE } from "@/lib/seo";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { AlternatesProvider } from "@/components/layout/alternates";
 import { Header } from "@/components/layout/Header";
@@ -18,9 +19,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo" });
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   return {
-    metadataBase: new URL(base),
+    metadataBase: new URL(SITE),
     title: { default: t("homeTitle"), template: "%s · Tallerya" },
     description: t("homeDesc"),
     openGraph: { siteName: "Tallerya", type: "website", locale: locale === "es" ? "es_CO" : "en_US" },

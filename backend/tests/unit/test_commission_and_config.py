@@ -89,3 +89,22 @@ def test_client_ip_uses_rightmost_entry_added_by_our_proxy(monkeypatch):
     assert client_ip(_req("1.2.3.4, 203.0.113.7")) == "203.0.113.7"
     assert client_ip(_req(None)) == "172.18.0.5"
     get_settings.cache_clear()
+
+
+def test_database_url_from_render_style_url():
+    s = Settings(DATABASE_URL="postgres://user:pa55@dpg-abc.render.internal/tallerya_db")
+    assert s.database_url == "postgresql+psycopg://user:pa55@dpg-abc.render.internal/tallerya_db"
+    assert Settings(DATABASE_URL="postgresql://u:p@h:5432/d").database_url == "postgresql+psycopg://u:p@h:5432/d"
+    assert Settings().database_url.startswith(
+        "postgresql+psycopg://tallerya:"
+    )  # sin DATABASE_URL: variables POSTGRES_*
+
+
+def test_fake_payments_allowed_outside_dev_only_in_explicit_demo():
+    base = dict(app_env="staging", jwt_secret="x" * 40, payment_webhook_secret="y" * 40, cookie_secure=True)
+    with pytest.raises(ValidationError):
+        Settings(**base)  # proveedor fake sin permiso explícito
+    demo = Settings(**base, allow_fake_payments=True)
+    assert demo.dev_endpoints_enabled is True  # la demo puede simular pagos
+    real = Settings(**base, payment_provider="wompi")
+    assert real.dev_endpoints_enabled is False  # con proveedor real NO hay endpoints /dev

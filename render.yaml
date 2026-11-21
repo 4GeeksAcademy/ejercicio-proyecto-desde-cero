@@ -1,0 +1,73 @@
+# Render Blueprint: crea la base de datos y los dos servicios web de Tallerya.
+# Guía paso a paso: docs/despliegue.md
+#
+# DEMO (plan gratuito): pagos SIMULADOS (no se cobra nada), worker embebido en la API, sin envío de correos.
+# Para un uso real hay que: elegir un proveedor de pagos, quitar ALLOW_FAKE_PAYMENTS, configurar SMTP y subir de plan.
+
+databases:
+  - name: tallerya-db
+    plan: free # OJO: la base de datos gratuita de Render caduca a los 30 días
+    region: virginia
+    databaseName: tallerya
+    user: tallerya
+
+services:
+  # ---------------------------------------------------------------- API (FastAPI)
+  - type: web
+    name: tallerya-api
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    # Orden: migraciones -> datos iniciales (idempotente) -> servidor
+    dockerCommand: sh -c "alembic upgrade head && python -m app.bootstrap && exec uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /ready
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tallerya-db
+          property: connectionString
+      - key: APP_ENV
+        value: staging
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PAYMENT_WEBHOOK_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      # --- DEMO ---
+      - key: PAYMENT_PROVIDER
+        value: fake
+      - key: ALLOW_FAKE_PAYMENTS
+        value: "true"
+      - key: EMBEDDED_WORKER
+        value: "true"
+      - key: SMTP_HOST
+        value: ""
+      - key: SEED_DEMO
+        value: "true"
+      # --- A rellenar en el panel de Render (no se guardan en Git) ---
+      - key: BOOTSTRAP_OWNER_EMAIL
+        sync: false
+      - key: BOOTSTRAP_OWNER_PASSWORD
+        sync: false
+      # URL pública del frontend (para enlaces en correos y QR). Ajusta si Render añadió un sufijo al nombre.
+      - key: FRONTEND_URL
+        value: https://tallerya-web.onrender.com
+
+  # ---------------------------------------------------------------- Web (Next.js)
+  - type: web
+    name: tallerya-web
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    healthCheckPath: /es
+    envVars:
+      # URL de la API. Se "hornea" en el build: si la cambias, haz "Clear build cache & deploy".
+      - key: API_INTERNAL_URL
+        value: https://tallerya-api.onrender.com
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://tallerya-web.onrender.com

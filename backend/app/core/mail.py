@@ -32,6 +32,13 @@ class InMemoryMailer:
         self.sent.append(mail)
 
 
+class NullMailer:
+    """Sin servidor de correo configurado (SMTP_HOST vacío): no se envía nada; los avisos siguen en la web."""
+
+    async def send(self, mail: Mail) -> None:
+        log.info("email_skipped", event_name="email_skipped", subject=mail.subject)
+
+
 class SmtpMailer:
     async def send(self, mail: Mail) -> None:
         s = get_settings()
@@ -56,7 +63,11 @@ _mailer: Mailer | None = None
 def get_mailer() -> Mailer:
     global _mailer
     if _mailer is None:
-        _mailer = InMemoryMailer() if get_settings().app_env == "testing" else SmtpMailer()
+        s = get_settings()
+        if s.app_env == "testing":
+            _mailer = InMemoryMailer()
+        else:
+            _mailer = SmtpMailer() if s.smtp_host else NullMailer()
     return _mailer
 
 

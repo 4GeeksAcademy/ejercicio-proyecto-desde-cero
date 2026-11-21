@@ -1,3 +1,4 @@
+import { apiBase } from "@/lib/apiBase";
 import { SITE, absoluteUrl } from "@/lib/seo";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import type { CourseDetail, CoursePage } from "@/lib/types";
@@ -5,11 +6,10 @@ import type { CourseDetail, CoursePage } from "@/lib/types";
 // Dinámico: NO se genera en el build (la API no existe entonces). Los datos se cachean 15 min en cada fetch.
 export const dynamic = "force-dynamic";
 
-const API = () => process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
 async function getJson<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API()}/api/v1${path}`, { next: { revalidate: 900 } });
+    const res = await fetch(`${apiBase()}/api/v1${path}`, { next: { revalidate: 900 } });
     return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;

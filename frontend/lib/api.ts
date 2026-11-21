@@ -4,6 +4,8 @@
  *  - Navegador: llama a /api/* (mismo origen) con cookies httpOnly + cabecera CSRF.
  */
 
+import { apiBase } from "./apiBase";
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -37,8 +39,7 @@ async function toError(res: Response): Promise<ApiError> {
 // ---------------------------------------------------------------- servidor
 
 export async function serverGet<T>(path: string, revalidate = 30): Promise<T> {
-  const base = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
-  const res = await fetch(`${base}/api/v1${path}`, { next: { revalidate } });
+  const res = await fetch(`${apiBase()}/api/v1${path}`, { next: { revalidate } });
   if (!res.ok) throw await toError(res);
   return (await res.json()) as T;
 }

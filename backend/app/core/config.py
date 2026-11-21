@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     postgres_db: str = "tallerya"
     postgres_host: str = "localhost"
     postgres_port: int = 5432
+    # Alternativa a POSTGRES_*: una sola URL (Render la entrega como DATABASE_URL, estilo postgres://...).
+    db_url: str | None = Field(default=None, validation_alias="DATABASE_URL")
 
     cors_allowed_origins: str = "http://localhost:3000"
 
@@ -40,7 +42,19 @@ class Settings(BaseSettings):
     payment_webhook_secret: str = "dev-only-webhook-secret-change-me"
     webhook_tolerance_seconds: int = 300
 
-    # Email (Mailpit en desarrollo)
+    # DEMO: permite el proveedor de pagos SIMULADO fuera de desarrollo (p. ej. un despliegue de demostración en Render).
+    # No se cobra nada real. Con un proveedor real esto debe estar en false.
+    allow_fake_payments: bool = False
+
+    # Worker embebido en el proceso de la API (para planes sin "background worker" separado). Un solo proceso.
+    embedded_worker: bool = False
+
+    # Arranque de un entorno nuevo (idempotente): crea el primer propietario y/o datos de demostración.
+    bootstrap_owner_email: str = ""
+    bootstrap_owner_password: str = ""
+    seed_demo: bool = False
+
+    # Email (Mailpit en desarrollo; vacío = no enviar correos, solo avisos dentro de la web)
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     mail_from: str = "Tallerya <no-reply@tallerya.local>"
@@ -69,13 +83,20 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "COOKIE_SECURE=true es obligatorio fuera de desarrollo (las cookies de sesión viajarían sin cifrar)"
                 )
-            if self.payment_provider == "fake":
-                raise ValueError("El proveedor de pagos 'fake' no se puede usar en staging/producción")
+            if self.payment_provider == "fake" and not self.allow_fake_payments:
+                raise ValueError(
+                    "El proveedor de pagos 'fake' no se puede usar en staging/producción "
+                    "(solo en una DEMO: ALLOW_FAKE_PAYMENTS=true)"
+                )
         return self
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def database_url(self) -> str:
+        if self.db_url:
+            # Render/Heroku entregan postgres://...; SQLAlchemy + psycopg 3 necesita postgresql+psycopg://
+            rest = self.db_url.split("://", 1)[1]
+            return f"postgresql+psycopg://{rest}"
         return (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
@@ -84,6 +105,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.cors_allowed_origins.split(",") if o.strip()]
+
+    @property
+    def dev_endpoints_enabled(self) -> bool:
+        """Endpoints /dev (simular pagos). Solo en desarrollo/tests o en una demo con pagos simulados."""
+        return self.app_env in ("development", "testing") or self.allow_fake_payments
 
     @property
     def is_production(self) -> bool:

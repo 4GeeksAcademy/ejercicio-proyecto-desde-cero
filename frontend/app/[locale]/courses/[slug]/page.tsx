@@ -5,12 +5,12 @@ import { ApiError, serverGet } from "@/lib/api";
 import type { CourseDetail } from "@/lib/types";
 import { formatDateTime, formatMoney, formatTimeRange } from "@/lib/format";
 import { getPathname } from "@/i18n/navigation";
+import { SITE } from "@/lib/seo";
 import { routing } from "@/i18n/routing";
 import { BookButton } from "@/components/courses/BookButton";
 import { RegisterAlternates } from "@/components/layout/alternates";
 import { TrackView } from "@/components/courses/TrackView";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 async function load(slug: string, locale: string): Promise<CourseDetail> {
   try {

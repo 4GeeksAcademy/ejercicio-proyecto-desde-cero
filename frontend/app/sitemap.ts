@@ -1,14 +1,15 @@
 import type { MetadataRoute } from "next";
 import { getPathname } from "@/i18n/navigation";
+import { apiBase } from "@/lib/apiBase";
+import { SITE } from "@/lib/seo";
 import { routing } from "@/i18n/routing";
 import type { CoursePage } from "@/lib/types";
 
 // Dinámico: si se generara en el build, quedaría sin cursos (la API aún no existe). El fetch cachea 1 h.
 export const dynamic = "force-dynamic";
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 async function allCourses(locale: string): Promise<CoursePage["items"]> {
-  const base = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
+  const base = apiBase();
   const out: CoursePage["items"] = [];
   for (let offset = 0; offset < 1000; offset += 50) {
     const res = await fetch(`${base}/api/v1/courses?locale=${locale}&limit=50&offset=${offset}`, { next: { revalidate: 3600 } });

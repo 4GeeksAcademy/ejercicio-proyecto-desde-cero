@@ -14,7 +14,8 @@ Plataforma web para una academia de **talleres presenciales de un día en Bogot�
 | 10 Telemetría (OpenTelemetry: trazas + métricas + logs con `trace_id`) · 11 Pipeline de analítica | ✅ (verificado hasta Tempo/Prometheus) |
 | 15 Asistente IA | 🟡 capa de herramientas de solo lectura lista y probada; **falta integrar el modelo** ([ADR-0007](docs/adr/0007-asistente-ia.md)) |
 | 14 CI | 🟡 definido en `.github/workflows/ci.yml`, **aún no ejecutado en GitHub** (cada paso se probó en local) |
-| 13 Rendimiento/seguridad: auditoría medida · 16 Producción (hosting, dominio, staging) | ⏳ pendientes |
+| 16 Despliegue en Render (`render.yaml`, probado simulándolo en local) | ✅ listo para desplegar: [docs/despliegue.md](docs/despliegue.md) |
+| 13 Rendimiento: auditoría medida · dominio propio y pagos reales | ⏳ pendientes |
 
 ## Arquitectura
 

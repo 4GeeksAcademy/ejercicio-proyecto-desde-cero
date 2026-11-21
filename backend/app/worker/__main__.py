@@ -42,24 +42,32 @@ async def run_cycle() -> dict[str, int]:
     return results
 
 
-async def main() -> None:
-    configure_logging()
+async def worker_loop(stop: asyncio.Event) -> None:
+    """Bucle del worker. Lo usa el proceso `python -m app.worker` y, si EMBEDDED_WORKER=true, la propia API."""
     interval = get_settings().worker_poll_seconds
-    stop = asyncio.Event()
-    loop = asyncio.get_running_loop()
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, stop.set)
     log.info("worker_started", event_name="worker_started", interval=interval)
     while not stop.is_set():
-        results = await run_cycle()
-        if any(results.values()):
-            log.info("worker_cycle", event_name="worker_cycle", **results)
+        try:
+            results = await run_cycle()
+            if any(results.values()):
+                log.info("worker_cycle", event_name="worker_cycle", **results)
+        except Exception:
+            log.exception("worker_cycle_failed")  # nunca debe morir el bucle (p. ej. migraciones aún sin aplicar)
         try:
             await asyncio.wait_for(stop.wait(), timeout=interval)
         except TimeoutError:
             pass
-    await dispose_engine()
     log.info("worker_stopped", event_name="worker_stopped")
+
+
+async def main() -> None:
+    configure_logging()
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, stop.set)
+    await worker_loop(stop)
+    await dispose_engine()
 
 
 if __name__ == "__main__":
