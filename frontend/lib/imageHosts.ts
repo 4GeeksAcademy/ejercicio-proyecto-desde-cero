@@ -9,7 +9,7 @@ const DEFAULT_HOSTS = [
   "ieperiodismo.com",
   "www.cocinadelirante.com",
   "images.squarespace-cdn.com",
-  "imesanmartin.com",
+  "institutointer.com",
   "daler-rowney.com",
   "clubdelmacrame.com",
   "www.igi-la.com",

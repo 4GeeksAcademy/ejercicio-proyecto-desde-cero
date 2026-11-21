@@ -1,4 +1,4 @@
-kjb# Tallerya
+# Tallerya
 
 Plataforma web para una academia de **talleres presenciales de un día en Bogotá**: catálogo, reservas con control de cupos, pagos, aprobación por el propietario, comisiones, notificaciones y panel de administración. Sustituye progresivamente la gestión en Excel.
 
