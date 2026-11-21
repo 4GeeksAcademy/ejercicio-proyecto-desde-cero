@@ -1,4 +1,4 @@
-# Tallerya
+kjb# Tallerya
 
 Plataforma web para una academia de **talleres presenciales de un día en Bogotá**: catálogo, reservas con control de cupos, pagos, aprobación por el propietario, comisiones, notificaciones y panel de administración. Sustituye progresivamente la gestión en Excel.
 
@@ -40,7 +40,8 @@ flowchart LR
 | 15 Asistente IA | 🟡 capa de herramientas de solo lectura lista y probada; **falta integrar el modelo** ([ADR-0007](docs/adr/0007-asistente-ia.md)) |
 | 14 CI | ✅ **en verde en GitHub** (backend, frontend, seguridad y Docker) |
 | 16 Despliegue en Render (`render.yaml`, probado simulándolo en local) | ✅ listo para desplegar: [docs/despliegue.md](docs/despliegue.md) |
-| 13 Rendimiento: auditoría medida · dominio propio y pagos reales | ⏳ pendientes |
+| 13 Rendimiento medido y optimizado (Lighthouse móvil: portada 94, catálogo 99, accesibilidad 100) | ✅ [docs/rendimiento.md](docs/rendimiento.md) |
+| Dominio propio · pagos y correo reales · fotos alojadas en el proyecto | ⏳ pendientes |
 
 ## Arquitectura
 
