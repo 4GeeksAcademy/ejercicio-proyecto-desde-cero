@@ -203,7 +203,9 @@
     "INVALID_STATE_TRANSITION": "Esa acción no está permitida en el estado actual.",
     "wakingTitle": "El servidor se está despertando",
     "wakingBody": "Esta demo usa un servidor gratuito que se duerme cuando nadie lo usa. Espera unos segundos y pulsa «Reintentar».",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "ASSISTANT_UNAVAILABLE": "El asistente no está disponible ahora. Inténtalo de nuevo en un momento.",
+    "ASSISTANT_DISABLED": "El asistente no está disponible en este momento."
   },
   "account": {
     "title": "Mi cuenta",
@@ -313,5 +315,20 @@
   "notFound": {
     "title": "Página no encontrada",
     "body": "La página que buscas no existe o fue movida."
+  },
+  "assistant": {
+    "title": "Asistente de Tallerya",
+    "open": "Pregúntale al asistente",
+    "close": "Cerrar el asistente",
+    "welcome": "¡Hola! Cuéntame qué te gustaría aprender y te recomiendo talleres reales de Tallerya.",
+    "s1": "Quiero algo creativo este fin de semana",
+    "s2": "¿Qué talleres de cocina hay?",
+    "s3": "Talleres por menos de 150.000 pesos",
+    "placeholder": "Escribe tu pregunta…",
+    "send": "Enviar",
+    "thinking": "Buscando talleres…",
+    "seats": "{count, plural, one {queda # plaza} other {quedan # plazas}}",
+    "full": "completo",
+    "disclaimer": "Soy una IA: puedo equivocarme. Compruébalo siempre en la página del curso. No puedo reservar ni pagar por ti."
   }
 }
