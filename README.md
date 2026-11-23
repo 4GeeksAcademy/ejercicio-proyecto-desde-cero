@@ -98,7 +98,7 @@ Ver [`.env.example`](.env.example). Nunca subas `.env`. `JWT_SECRET` y `PAYMENT_
 
 ```bash
 docker compose up -d db
-cd backend  && POSTGRES_HOST=localhost uv run pytest --cov=app   # 204 tests, 94 % cobertura (PostgreSQL real)
+cd backend  && POSTGRES_HOST=localhost uv run pytest --cov=app   # 205 tests, 94 % cobertura (PostgreSQL real)
             && uv run ruff check . && uv run mypy app
 cd frontend && npm run lint && npm run typecheck && npm test      # unit + i18n
             && npm run e2e                                         # 15 pruebas en navegador; requiere el stack levantado y un admin (ver e2e/)
