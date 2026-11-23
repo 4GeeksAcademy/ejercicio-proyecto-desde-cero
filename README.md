@@ -7,9 +7,11 @@ Plataforma web para una academia de **talleres presenciales de un día en Bogot�
 [![CI](https://github.com/4GeeksAcademy/ejercicio-proyecto-desde-cero/actions/workflows/ci.yml/badge.svg)](https://github.com/4GeeksAcademy/ejercicio-proyecto-desde-cero/actions/workflows/ci.yml)
 
 ## Demo en vivo
-**https://tallerya-web.onrender.com** · API: https://tallerya-api.onrender.com/docs (si la documentación está habilitada)
+**https://tallerya-web.onrender.com** · API: https://tallerya-api.onrender.com/docs
 
-> Está en el plan gratuito de Render: **se duerme tras ~15 min sin visitas** y la primera carga puede tardar hasta un minuto. Los pagos son **simulados** (no se cobra nada) y no se envían correos.
+> Está en el plan gratuito de Render: **se duerme tras ~15 min sin visitas** y la primera carga puede tardar **1–2 minutos** (pantalla «Service waking up»); las siguientes son rápidas. Los pagos son **simulados** (no se cobra nada) y no se envían correos.
+>
+> 👉 **¿Vas a revisarlo? Empieza por la [guía del revisor](docs/guia-del-revisor.md)**: qué probar, limitaciones de la demo y dónde está la evidencia.
 
 | Catálogo (ES/EN, filtros, disponibilidad) | Ficha del curso (SEO, JSON-LD) | Móvil |
 |---|---|---|
