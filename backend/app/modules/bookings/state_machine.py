@@ -51,7 +51,8 @@ TRANSITIONS: dict[Event, Rule] = {
     Event.AWAIT_APPROVAL: _r({S.PAID}, S.PENDING_APPROVAL, Actor.SYSTEM),
     Event.APPROVED: _r({S.PENDING_APPROVAL}, S.CONFIRMED, Actor.ADMIN, Actor.SYSTEM),  # SYSTEM: auto-aprobación
     Event.REJECTED: _r({S.PENDING_APPROVAL}, S.REJECTED, Actor.ADMIN),
-    Event.EXPIRED: _r({S.PENDING_PAYMENT}, S.EXPIRED, Actor.SYSTEM),
+    # PAYMENT_PROCESSING también caduca (con un margen, ver PROCESSING_GRACE): un pago abandonado no bloquea la plaza.
+    Event.EXPIRED: _r({S.PENDING_PAYMENT, S.PAYMENT_PROCESSING}, S.EXPIRED, Actor.SYSTEM),
     Event.CANCELLED: _r(
         {S.PENDING_PAYMENT, S.PENDING_APPROVAL, S.CONFIRMED, S.PAID}, S.CANCELLED, Actor.USER, Actor.ADMIN
     ),

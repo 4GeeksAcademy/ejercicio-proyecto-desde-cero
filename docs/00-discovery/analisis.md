@@ -101,7 +101,7 @@ Son **[PROPUESTA]**, no SLA del cliente. Todos "PENDIENTE DE CONFIRMAR" como com
 | RN-12 | Dinero en enteros de unidad mínima + moneda ISO 4217; nunca `float` | [TÉCNICO] |
 | RN-13 | Plazo de pago = creación + 24 h. Como solo se reserva con >24 h de antelación, el plazo siempre termina ANTES del inicio. *(Corregido en H5: la versión anterior de este análisis lo planteaba mal.)* | [REGLA] |
 | RN-14 | Un pago que llega tras la caducidad no confirma plaza; se trata como anomalía (reembolso/revisión) | [PROPUESTA] / [PENDIENTE] |
-| RN-15 | Reserva en `PAYMENT_PROCESSING` no caduca hasta que el proveedor resuelva (con tope) | [PROPUESTA] |
+| RN-15 | Reserva en `PAYMENT_PROCESSING` espera a que el proveedor resuelva, pero con tope: pasada 1 h desde el plazo de pago caduca y libera la plaza (un pago posterior se trata como tardío, RN-14) | [PROPUESTA] ✅ implementado |
 | RN-16 | Reducir capacidad de un curso por debajo de reservas activas está prohibido | [REGLA] |
 | RN-17 | Cancelar un curso (admin) cancela todas sus reservas y dispara reembolso | [REGLA] / [PENDIENTE] política |
 | RN-18 | Toda lógica crítica vive en backend | [CLIENTE] |
@@ -218,6 +218,7 @@ stateDiagram-v2
   PENDING_APPROVAL --> CONFIRMED: approve (admin)
   PENDING_APPROVAL --> REJECTED: reject (admin)
   PENDING_PAYMENT --> EXPIRED: expire (sistema, 24 h)
+  PAYMENT_PROCESSING --> EXPIRED: expire (sistema, 25 h: pago abandonado)
   PENDING_PAYMENT --> CANCELLED: cancel (cliente >24 h / admin)
   PENDING_APPROVAL --> CANCELLED: cancel
   CONFIRMED --> CANCELLED: cancel (cliente >24 h / admin)
@@ -236,7 +237,7 @@ stateDiagram-v2
 | PAID→PENDING_APPROVAL | `awaiting_approval` | Sistema | — | Aviso a admin |
 | →CONFIRMED | `booking_approved` | Admin/Propietario | Curso no cancelado | Auditoría, QR, notificación al cliente |
 | →REJECTED | `booking_rejected` | Admin/Propietario | Motivo obligatorio | Auditoría, iniciar reembolso [PENDIENTE] |
-| →EXPIRED | `booking_expired` | Sistema | `expires_at` vencido y no PROCESSING | Libera plaza, notificación |
+| →EXPIRED | `booking_expired` | Sistema | `expires_at` vencido; si está en PROCESSING, además 1 h de margen | Libera plaza, notificación |
 | →CANCELLED | `booking_cancelled` | Cliente (>24 h) / Admin (cualquier momento, con motivo) | Regla RN-05 | Libera plaza; si pagó, iniciar reembolso |
 | →REFUNDED | `refund_completed` | Sistema (proveedor) | Pago REFUNDED | Auditoría, notificación |
 
@@ -578,7 +579,7 @@ Con tu "aprobado" siguiente paso: **HITO 1** presentado con la plantilla del pun
 | Accesibilidad | WCAG 2.2 AA en los flujos principales | ✅ axe: 0 violaciones graves en 6 páginas públicas y en el chat; Lighthouse 100. (No se hizo revisión manual con lector de pantalla) |
 | Escalabilidad | 10× la carga estimada sin reescribir | ❓ **no probada** (no hay prueba de carga) |
 | Recuperación | RPO ≤ 24 h, RTO ≤ 4 h | 🟡 `scripts/backup.sh` y `scripts/restore-check.sh` con simulacro de restauración ejecutado una vez; **no hay copias automáticas** |
-| Testabilidad | ≥ 80 % de cobertura; casos críticos cubiertos | ✅ **94 %** de cobertura en backend (205 tests, con PostgreSQL real); 26 tests unitarios de frontend; 15 pruebas E2E de navegador. Los 15 casos críticos de la sección 34 tienen test |
+| Testabilidad | ≥ 80 % de cobertura; casos críticos cubiertos | ✅ **94 %** de cobertura en backend (207 tests, con PostgreSQL real); 26 tests unitarios de frontend; 15 pruebas E2E de navegador. Los 15 casos críticos de la sección 34 tienen test |
 
 ## A.4 Lo que sigue pendiente
 - **Del cliente (sin cambios):** las 18 preguntas de la sección 12 (proveedor de pagos, quién recibe el 20 %, reembolsos, QR/WhatsApp, grabaciones, textos legales…). Con ellas se conectarían pagos y correo reales.

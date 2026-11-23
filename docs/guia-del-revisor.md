@@ -51,7 +51,7 @@ Para crear un administrador local: ver «Puesta en marcha» en el [README](../RE
 |---|---|
 | Análisis y reglas de negocio (45 puntos) | [`00-discovery/analisis.md`](00-discovery/analisis.md) |
 | Decisiones de arquitectura | [`adr/`](adr/) (monolito modular, FastAPI, PostgreSQL, concurrencia de cupos, worker/outbox, pagos desacoplados, asistente IA) |
-| Tests | Backend: **205** con PostgreSQL real y **94 %** de cobertura (incluye concurrencia sobre la última plaza y propiedades con Hypothesis). Frontend: **26** unitarios y **15** E2E de navegador con comprobación de accesibilidad (axe) |
+| Tests | Backend: **207** con PostgreSQL real y **94 %** de cobertura (incluye concurrencia sobre la última plaza y propiedades con Hypothesis). Frontend: **26** unitarios y **15** E2E de navegador con comprobación de accesibilidad (axe) |
 | CI | GitHub Actions: lint, tipos, tests, build, escaneo de dependencias, secretos e imágenes Docker |
 | Rendimiento medido | [`rendimiento.md`](rendimiento.md) (Lighthouse móvil: portada 94, catálogo 99, accesibilidad 100) |
 | SEO y agentes | [`seo-y-agentes.md`](seo-y-agentes.md) |

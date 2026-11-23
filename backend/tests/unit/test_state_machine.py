@@ -55,11 +55,17 @@ def test_confirmed_cannot_go_back():
             next_status(S.CONFIRMED, event, Actor.SYSTEM)
 
 
-def test_expire_only_from_pending_payment():
-    assert next_status(S.PENDING_PAYMENT, Event.EXPIRED, Actor.SYSTEM) == S.EXPIRED
-    for src in set(S) - {S.PENDING_PAYMENT}:
+def test_expire_only_while_payment_is_pending_or_abandoned():
+    """Caduca desde "pendiente de pago" y desde "procesando pago" (pago abandonado, RN-15); nunca una reserva ya pagada."""
+    expirable = {S.PENDING_PAYMENT, S.PAYMENT_PROCESSING}
+    for src in expirable:
+        assert next_status(src, Event.EXPIRED, Actor.SYSTEM) == S.EXPIRED
+    for src in set(S) - expirable:
         with pytest.raises(InvalidTransitionError):
             next_status(src, Event.EXPIRED, Actor.SYSTEM)
+    for actor in (Actor.USER, Actor.ADMIN):  # solo el sistema puede caducar
+        with pytest.raises(ActorNotAllowedError):
+            next_status(S.PAYMENT_PROCESSING, Event.EXPIRED, actor)
 
 
 def test_no_transition_leaves_a_dead_end_without_reason():

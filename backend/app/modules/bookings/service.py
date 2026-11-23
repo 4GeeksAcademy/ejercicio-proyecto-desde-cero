@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import lazyload
@@ -379,14 +379,24 @@ async def admin_list(
 # ------------------------------------------------------------------ caducidad (job) y curso cancelado
 
 
+# RN-15: una reserva en PAYMENT_PROCESSING espera a que el proveedor resuelva, pero no para siempre (con tope):
+# si el cliente abandona la pasarela, pasado este margen desde el plazo de pago la plaza se libera.
+# Un pago que llegue después se trata como pago tardío (RN-14): no confirma plaza y queda marcado para reembolso.
+PROCESSING_GRACE = timedelta(hours=1)
+
+
 async def expire_due_bookings(session: AsyncSession, batch_size: int = 100) -> int:
     """Marca como EXPIRED las reservas con plazo de pago vencido. Idempotente y seguro con varios workers (SKIP LOCKED)."""
     now = clock.now()
+    overdue = or_(
+        and_(Booking.status == S.PENDING_PAYMENT.value, Booking.expires_at <= now),
+        and_(Booking.status == S.PAYMENT_PROCESSING.value, Booking.expires_at <= now - PROCESSING_GRACE),
+    )
     due = (
         (
             await session.execute(
                 select(Booking)
-                .where(Booking.status == S.PENDING_PAYMENT.value, Booking.expires_at <= now)
+                .where(overdue)
                 .order_by(Booking.expires_at)
                 .limit(batch_size)
                 .with_for_update(skip_locked=True)

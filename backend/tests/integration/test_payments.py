@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import func, select, text
 
 from app.core import clock
+from app.modules.bookings import service as booking_service
 from app.modules.bookings.models import Booking
 from app.modules.core_events.models import DomainEvent
 from app.modules.payments.models import Commission, Payment, PaymentEvent
@@ -241,6 +242,39 @@ async def test_late_payment_after_expiry_does_not_confirm_and_flags_refund(sessi
         await session.execute(select(DomainEvent).where(DomainEvent.event_type == "payment_needs_refund"))
     ).scalar_one()
     assert ev.payload["booking_status"] == "CANCELLED"
+
+
+async def test_abandoned_payment_expires_after_grace_and_frees_the_seat(session, auth_client):
+    """RN-15 con tope: quien abandona la pasarela no bloquea la plaza para siempre."""
+    course, _, c, b, _ = await started(session, auth_client, capacity=1)
+    course_id = course.id  # tras expire_all() el ORM no puede recargar atributos en una sesión asíncrona
+    # Dentro del plazo de pago y del margen: sigue "procesando" y la plaza sigue ocupada
+    clock.freeze(clock.now() + timedelta(hours=24, minutes=30))
+    assert await booking_service.expire_due_bookings(session) == 0
+    assert (await c.get(f"{API}/courses/{course_id}/availability")).json()["seats_available"] == 0
+    # Pasado el margen: caduca y libera la plaza
+    clock.freeze(clock.now() + timedelta(hours=1))
+    assert await booking_service.expire_due_bookings(session) == 1
+    assert await booking_service.expire_due_bookings(session) == 0  # idempotente
+    session.expire_all()
+    assert (await session.execute(select(Booking.status))).scalar_one() == "EXPIRED"
+    assert (await c.get(f"{API}/courses/{course_id}/availability")).json()["seats_available"] == 1
+
+
+async def test_payment_arriving_after_abandoned_booking_expired_flags_refund(session, auth_client, _provider):
+    _, _, c, b, p = await started(session, auth_client)
+    ref = await reference_of(session, p["id"])
+    clock.freeze(clock.now() + timedelta(hours=26))
+    assert await booking_service.expire_due_bookings(session) == 1
+    body, headers = _provider.build_webhook(OK, ref)
+    assert (await post_webhook(c, body, headers)).json() == {"status": "processed"}
+    session.expire_all()
+    assert (await session.execute(select(Booking.status))).scalar_one() == "EXPIRED"  # no se confirma plaza
+    assert (await session.execute(select(func.count()).select_from(Commission))).scalar_one() == 0
+    ev = (
+        await session.execute(select(DomainEvent).where(DomainEvent.event_type == "payment_needs_refund"))
+    ).scalar_one()
+    assert ev.payload["booking_status"] == "EXPIRED"
 
 
 # ----------------------------------------------------------------------------- reembolso
